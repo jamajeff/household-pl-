@@ -68,6 +68,14 @@ export function StatementPage({ yearMonth }: Props) {
     setMonth({ ...next, yearMonth: nextYM, expenses: [...next.expenses, { ...item, id: nanoid() }], updatedAt: new Date().toISOString() })
   }
 
+  function pushAllExpensesToNextMonth(items: ExpenseLineItem[]) {
+    const { nextYM, record: next } = nextMonthRecord()
+    const existing = new Set(next.expenses.map((e) => e.label.toLowerCase()))
+    const toAdd = items.filter((i) => !existing.has(i.label.toLowerCase()))
+    if (toAdd.length === 0) return
+    setMonth({ ...next, yearMonth: nextYM, expenses: [...next.expenses, ...toAdd.map((i) => ({ ...i, id: nanoid() }))], updatedAt: new Date().toISOString() })
+  }
+
   const activeIncome = record.income.filter((i) => i.subcategory === 'active')
   const semiActiveIncome = record.income.filter((i) => i.subcategory === 'semi_active')
   const passiveIncome = record.income.filter((i) => i.subcategory === 'passive')
@@ -164,6 +172,7 @@ export function StatementPage({ yearMonth }: Props) {
           onUpdate={(id, u) => updateExpense(id, u as Partial<ExpenseLineItem>)}
           onDelete={deleteExpense}
           onPushToNext={(item) => pushExpenseToNextMonth(item as ExpenseLineItem)}
+          onPushAllToNext={() => pushAllExpensesToNextMonth(fixedExpenses)}
         >
           <AddLineItemForm mode="expense" subcategory="fixed" symbol={sym} onAdd={addExpense} />
         </SectionTable>
@@ -176,6 +185,7 @@ export function StatementPage({ yearMonth }: Props) {
           onUpdate={(id, u) => updateExpense(id, u as Partial<ExpenseLineItem>)}
           onDelete={deleteExpense}
           onPushToNext={(item) => pushExpenseToNextMonth(item as ExpenseLineItem)}
+          onPushAllToNext={() => pushAllExpensesToNextMonth(variableExpenses)}
         >
           <AddLineItemForm mode="expense" subcategory="variable" symbol={sym} onAdd={addExpense} />
         </SectionTable>

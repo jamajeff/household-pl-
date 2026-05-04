@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import clsx from 'clsx'
 import type { IncomeLineItem, ExpenseLineItem, AppSettings } from '../../types'
 import { LineItemRow } from './LineItemRow'
@@ -14,6 +15,7 @@ interface Props {
   onUpdate: (id: string, updates: Partial<AnyItem>) => void
   onDelete: (id: string) => void
   onPushToNext?: (item: AnyItem) => void
+  onPushAllToNext?: () => void
 }
 
 export function SectionTable({
@@ -26,11 +28,31 @@ export function SectionTable({
   onUpdate,
   onDelete,
   onPushToNext,
+  onPushAllToNext,
 }: Props) {
+  const [pushedAll, setPushedAll] = useState(false)
+
+  function handlePushAll() {
+    onPushAllToNext?.()
+    setPushedAll(true)
+    setTimeout(() => setPushedAll(false), 2000)
+  }
+
   return (
     <div className="mb-1">
-      <div className={clsx('flex items-center gap-2 px-4 py-2 border-l-4', accentColor)}>
+      <div className={clsx('flex items-center justify-between px-4 py-2 border-l-4', accentColor)}>
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</span>
+        {onPushAllToNext && items.length > 0 && (
+          <button
+            onClick={handlePushAll}
+            title="Push entire category to next month"
+            className={pushedAll
+              ? 'text-emerald-500 text-xs px-1.5 py-0.5 rounded bg-emerald-50'
+              : 'text-gray-400 hover:text-emerald-500 text-xs px-1.5 py-0.5 rounded hover:bg-emerald-50 transition-colors'}
+          >
+            {pushedAll ? '✓ all' : '→ all'}
+          </button>
+        )}
       </div>
       <table className="w-full">
         <tbody>
