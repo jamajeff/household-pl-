@@ -14,12 +14,14 @@ interface Props {
   symbol?: string
   onUpdate: (id: string, updates: Partial<AnyItem>) => void
   onDelete: (id: string) => void
+  onPushToNext?: (item: AnyItem) => void
 }
 
-export function LineItemRow({ item, showPerson = true, name1, name2, symbol = '$', onUpdate, onDelete }: Props) {
+export function LineItemRow({ item, showPerson = true, name1, name2, symbol = '$', onUpdate, onDelete, onPushToNext }: Props) {
   const [editing, setEditing] = useState(false)
   const [label, setLabel] = useState(item.label)
   const [amount, setAmount] = useState(item.amount)
+  const [pushed, setPushed] = useState(false)
 
   function save() {
     onUpdate(item.id, { label, amount } as Partial<AnyItem>)
@@ -30,6 +32,12 @@ export function LineItemRow({ item, showPerson = true, name1, name2, symbol = '$
     setLabel(item.label)
     setAmount(item.amount)
     setEditing(false)
+  }
+
+  function handlePush() {
+    onPushToNext?.(item)
+    setPushed(true)
+    setTimeout(() => setPushed(false), 2000)
   }
 
   if (editing) {
@@ -88,6 +96,17 @@ export function LineItemRow({ item, showPerson = true, name1, name2, symbol = '$
       </td>
       <td className="py-2.5 pr-4 pl-2">
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {onPushToNext && (
+            <button
+              onClick={handlePush}
+              title="Push to next month"
+              className={pushed
+                ? 'text-emerald-500 text-xs px-1.5 py-1 rounded bg-emerald-50'
+                : 'text-gray-400 hover:text-emerald-500 text-xs px-1.5 py-1 rounded hover:bg-emerald-50 transition-colors'}
+            >
+              {pushed ? '✓' : '→'}
+            </button>
+          )}
           <button onClick={() => setEditing(true)} className="text-gray-400 hover:text-blue-500 text-xs px-1.5 py-1 rounded hover:bg-blue-50 transition-colors">Edit</button>
           <button onClick={() => onDelete(item.id)} className="text-gray-400 hover:text-red-500 text-xs px-1.5 py-1 rounded hover:bg-red-50 transition-colors">✕</button>
         </div>

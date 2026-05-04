@@ -13,6 +13,7 @@ interface Props {
   children?: React.ReactNode
   onUpdate: (id: string, updates: Partial<AnyItem>) => void
   onDelete: (id: string) => void
+  onPushToNext?: (item: AnyItem) => void
 }
 
 export function SectionTable({
@@ -24,6 +25,7 @@ export function SectionTable({
   children,
   onUpdate,
   onDelete,
+  onPushToNext,
 }: Props) {
   return (
     <div className="mb-1">
@@ -42,6 +44,7 @@ export function SectionTable({
               symbol={settings.currencySymbol}
               onUpdate={onUpdate as (id: string, updates: Partial<AnyItem>) => void}
               onDelete={onDelete}
+              onPushToNext={onPushToNext}
             />
           ))}
           {children}
