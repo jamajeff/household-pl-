@@ -7,6 +7,7 @@ import { computeDelta } from '../../utils/comparison'
 import { useSettings } from '../../hooks/useSettings'
 import { MetricCard } from './MetricCard'
 import { formatCurrency, formatPct, labelMonth, shortMonth } from '../../utils/formatting'
+// formatPct used for burnRate MetricCard
 import { currentYearMonth } from '../../hooks/useMonthData'
 
 export function DashboardPage() {
@@ -28,12 +29,8 @@ export function DashboardPage() {
         revenue: m.totalRevenue / 100,
         expenses: m.totalExpenses / 100,
         netCashFlow: m.netCashFlow / 100,
-        savingsRate: m.savingsRate,
-        wealthBuilding: m.wealthBuildingTotal / 100,
       }
-    }).filter(Boolean) as NonNullable<ReturnType<typeof getMonth> extends null ? never : {
-      ym: string; label: string; revenue: number; expenses: number; netCashFlow: number; savingsRate: number; wealthBuilding: number
-    }>[]
+    }).filter(Boolean) as { ym: string; label: string; revenue: number; expenses: number; netCashFlow: number }[]
 
     const latestYM = index[index.length - 1]
     const priorYM = index[index.length - 2]
@@ -105,12 +102,12 @@ export function DashboardPage() {
               accent="border-l-4 border-l-blue-400"
             />
             <MetricCard
-              label="Savings Rate"
-              value={latest ? formatPct(latest.savingsRate) : '—'}
-              deltaField="savingsRate"
-              deltaValue={delta?.savingsRate}
+              label="Burn Rate"
+              value={latest ? formatPct(latest.burnRate) : '—'}
+              deltaField="burnRate"
+              deltaValue={delta?.burnRate}
               deltaFormat="pp"
-              accent="border-l-4 border-l-violet-400"
+              accent="border-l-4 border-l-amber-400"
             />
           </div>
 
@@ -133,7 +130,7 @@ export function DashboardPage() {
 
           {/* Bar chart */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Revenue vs. Expenses vs. Wealth Building</h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">Revenue vs. Expenses</h2>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={months} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -143,7 +140,6 @@ export function DashboardPage() {
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="revenue" fill="#10b981" name="Revenue" radius={[3, 3, 0, 0]} />
                 <Bar dataKey="expenses" fill="#f87171" name="Expenses" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="wealthBuilding" fill="#8b5cf6" name="Wealth Building" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

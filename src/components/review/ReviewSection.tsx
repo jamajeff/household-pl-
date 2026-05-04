@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import type { MonthRecord, MonthDelta, LineItemDelta, ReviewData, AppSettings } from '../../types'
 import { DeltaBadge } from '../shared/DeltaBadge'
-import { formatCurrency, formatPct, labelMonth } from '../../utils/formatting'
+import { formatCurrency, labelMonth } from '../../utils/formatting'
 import { generateChangesSummary, deltaDirection } from '../../utils/comparison'
 
 interface Props {
@@ -17,9 +17,7 @@ interface Props {
 const DELTA_FIELDS: { field: keyof MonthDelta; label: string; format: 'currency' | 'pp' }[] = [
   { field: 'totalRevenue', label: 'Revenue', format: 'currency' },
   { field: 'totalExpenses', label: 'Expenses', format: 'currency' },
-  { field: 'wealthBuildingTotal', label: 'Wealth Building', format: 'currency' },
   { field: 'netCashFlow', label: 'Net Cash Flow', format: 'currency' },
-  { field: 'savingsRate', label: 'Savings Rate', format: 'pp' },
   { field: 'burnRate', label: 'Burn Rate', format: 'pp' },
 ]
 
@@ -36,7 +34,6 @@ export function ReviewSection({ record, delta, lineItemDeltas, priorYM, settings
       lineItemDeltas,
       labelMonth(priorYM),
       (c) => formatCurrency(c, sym),
-      formatPct,
     )
     autoGenRef.current = generated
     onUpdateReview({ ...review, keyChanges: generated })

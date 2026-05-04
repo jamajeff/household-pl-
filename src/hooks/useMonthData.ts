@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { getMonth, setMonth } from '../utils/storage'
 import type { MonthRecord, IncomeLineItem, ExpenseLineItem, ReviewData } from '../types'
+import { nanoid } from '../components/statement/nanoid'
 import { format } from 'date-fns'
 
 function emptyRecord(yearMonth: string): MonthRecord {
@@ -67,6 +68,17 @@ export function useMonthData(yearMonth: string) {
     [record, persist],
   )
 
+  const copyFromRecord = useCallback(
+    (source: MonthRecord) => {
+      persist({
+        ...record,
+        income: source.income.map((i) => ({ ...i, id: nanoid() })),
+        expenses: source.expenses.map((e) => ({ ...e, id: nanoid() })),
+      })
+    },
+    [record, persist],
+  )
+
   // Reload when yearMonth prop changes
   const [currentYearMonth, setCurrentYearMonth] = useState(yearMonth)
   if (yearMonth !== currentYearMonth) {
@@ -83,6 +95,7 @@ export function useMonthData(yearMonth: string) {
     updateExpense,
     deleteExpense,
     updateReview,
+    copyFromRecord,
   }
 }
 

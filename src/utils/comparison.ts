@@ -10,20 +10,12 @@ export function computeDelta(current: MonthMetrics, prior: MonthMetrics): MonthD
   return {
     totalRevenue: current.totalRevenue - prior.totalRevenue,
     totalExpenses: current.totalExpenses - prior.totalExpenses,
-    wealthBuildingTotal: current.wealthBuildingTotal - prior.wealthBuildingTotal,
     netCashFlow: current.netCashFlow - prior.netCashFlow,
-    savingsRate: current.savingsRate - prior.savingsRate,
     burnRate: current.burnRate - prior.burnRate,
   }
 }
 
-// Higher = better for these fields; lower = better for the rest
-const HIGHER_IS_BETTER: Array<keyof MonthDelta> = [
-  'totalRevenue',
-  'netCashFlow',
-  'savingsRate',
-  'wealthBuildingTotal',
-]
+const HIGHER_IS_BETTER: Array<keyof MonthDelta> = ['totalRevenue', 'netCashFlow']
 
 export function deltaDirection(
   field: keyof MonthDelta,
@@ -73,7 +65,6 @@ export function generateChangesSummary(
   lineDeltas: LineItemDelta[],
   priorLabel: string,
   formatCurrency: (cents: number) => string,
-  formatPct: (n: number) => string,
 ): string {
   const lines: string[] = []
 
@@ -87,12 +78,6 @@ export function generateChangesSummary(
   if (exp !== 0) {
     const sign = exp > 0 ? 'increased' : 'decreased'
     lines.push(`Expenses ${sign} by ${formatCurrency(Math.abs(exp))}.`)
-  }
-
-  const savings = delta.savingsRate
-  if (Math.abs(savings) >= 0.5) {
-    const sign = savings > 0 ? 'up' : 'down'
-    lines.push(`Savings rate ${sign} ${formatPct(Math.abs(savings))} vs ${priorLabel}.`)
   }
 
   const notable = lineDeltas

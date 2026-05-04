@@ -1,8 +1,10 @@
-import type { AppSettings, MonthRecord } from '../types'
+import type { AppSettings, MonthRecord, Asset, Debt } from '../types'
 
 const PREFIX = 'pl:'
 const INDEX_KEY = `${PREFIX}index`
 const SETTINGS_KEY = `${PREFIX}settings`
+const ASSETS_KEY = `${PREFIX}assets`
+const DEBTS_KEY = `${PREFIX}debts`
 
 const DEFAULT_SETTINGS: AppSettings = {
   person1Name: 'Person 1',
@@ -59,4 +61,30 @@ export function getSettings(): AppSettings {
 
 export function setSettings(settings: AppSettings): void {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+}
+
+export function getAssets(): Asset[] {
+  try {
+    const raw = localStorage.getItem(ASSETS_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+export function setAssets(assets: Asset[]): void {
+  localStorage.setItem(ASSETS_KEY, JSON.stringify(assets))
+}
+
+export function getDebts(): Debt[] {
+  try {
+    const raw = localStorage.getItem(DEBTS_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+export function setDebts(debts: Debt[]): void {
+  localStorage.setItem(DEBTS_KEY, JSON.stringify(debts))
 }

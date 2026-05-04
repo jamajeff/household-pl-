@@ -23,9 +23,10 @@ export function StatementPage({ yearMonth }: Props) {
     addIncome, updateIncome, deleteIncome,
     addExpense, updateExpense, deleteExpense,
     updateReview,
+    copyFromRecord,
   } = useMonthData(yearMonth)
 
-  const { delta, priorYM, lineItemDeltas } = useComparison(record)
+  const { delta, priorYM, priorRecord, lineItemDeltas } = useComparison(record)
   const metrics = computeMetrics(record)
 
   const sym = settings.currencySymbol
@@ -41,7 +42,6 @@ export function StatementPage({ yearMonth }: Props) {
   const passiveIncome = record.income.filter((i) => i.subcategory === 'passive')
   const fixedExpenses = record.expenses.filter((e) => e.subcategory === 'fixed')
   const variableExpenses = record.expenses.filter((e) => e.subcategory === 'variable')
-  const wealthExpenses = record.expenses.filter((e) => e.subcategory === 'wealth')
 
   return (
     <div className="max-w-3xl mx-auto px-2 md:px-0 py-6">
@@ -54,6 +54,22 @@ export function StatementPage({ yearMonth }: Props) {
         </div>
         <button onClick={() => goMonth(1)} className="text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-gray-100 transition-colors">Next ›</button>
       </div>
+
+      {/* Copy-from-last-month banner */}
+      {priorRecord && record.income.length === 0 && record.expenses.length === 0 && (
+        <div className="mx-4 mb-4 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-blue-800">Start from last month?</p>
+            <p className="text-xs text-blue-500 mt-0.5">Copy all entries from {labelMonth(priorYM!)} as a starting point — then edit what changed.</p>
+          </div>
+          <button
+            onClick={() => copyFromRecord(priorRecord)}
+            className="ml-4 flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            Copy entries
+          </button>
+        </div>
+      )}
 
       {/* Income */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
@@ -129,24 +145,7 @@ export function StatementPage({ yearMonth }: Props) {
         </SectionTable>
       </div>
 
-      {/* Wealth Building */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-800 uppercase tracking-wider">Wealth Building</h2>
-          <span className="text-sm font-semibold tabular-nums text-violet-600">{formatCurrency(metrics.wealthBuildingTotal, sym)}</span>
-        </div>
 
-        <SectionTable
-          title="Investments & Savings"
-          accentColor="border-violet-400 bg-violet-50/30"
-          items={wealthExpenses}
-          settings={settings}
-          onUpdate={(id, u) => updateExpense(id, u as Partial<ExpenseLineItem>)}
-          onDelete={deleteExpense}
-        >
-          <AddLineItemForm mode="expense" subcategory="wealth" symbol={sym} onAdd={addExpense} />
-        </SectionTable>
-      </div>
 
       {/* Metrics Summary */}
       <MetricsSummaryBar metrics={metrics} delta={delta} settings={settings} />

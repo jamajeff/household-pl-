@@ -12,12 +12,9 @@ export function computeMetrics(record: MonthRecord): MonthMetrics {
 
   const fixedExpenses = sum(record.expenses.filter((e) => e.subcategory === 'fixed'))
   const variableExpenses = sum(record.expenses.filter((e) => e.subcategory === 'variable'))
-  const wealthBuildingTotal = sum(record.expenses.filter((e) => e.subcategory === 'wealth'))
-
   const totalExpenses = fixedExpenses + variableExpenses
-  const netCashFlow = totalRevenue - totalExpenses - wealthBuildingTotal
 
-  const savingsRate = totalRevenue > 0 ? (wealthBuildingTotal / totalRevenue) * 100 : 0
+  const netCashFlow = totalRevenue - totalExpenses
   const burnRate = totalRevenue > 0 ? (totalExpenses / totalRevenue) * 100 : 0
 
   const person1Income = sum(record.income.filter((i) => i.person === 'person1'))
@@ -26,9 +23,7 @@ export function computeMetrics(record: MonthRecord): MonthMetrics {
   return {
     totalRevenue,
     totalExpenses,
-    wealthBuildingTotal,
     netCashFlow,
-    savingsRate,
     burnRate,
     person1Income,
     person2Income,

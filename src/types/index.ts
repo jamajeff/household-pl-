@@ -2,7 +2,10 @@ export type Person = 'person1' | 'person2' | 'shared'
 
 export type IncomeSubcategory = 'active' | 'semi_active' | 'passive'
 
-export type ExpenseSubcategory = 'fixed' | 'variable' | 'wealth'
+export type ExpenseSubcategory = 'fixed' | 'variable'
+
+export type AssetCategory = 'investment' | 'savings' | 'real_estate' | 'other'
+export type DebtCategory = 'mortgage' | 'auto' | 'student' | 'credit_card' | 'other'
 
 export interface LineItem {
   id: string
@@ -18,6 +21,22 @@ export interface IncomeLineItem extends LineItem {
 
 export interface ExpenseLineItem extends LineItem {
   subcategory: ExpenseSubcategory
+}
+
+export interface Asset {
+  id: string
+  label: string
+  value: number // integer cents
+  category: AssetCategory
+  updatedAt: string
+}
+
+export interface Debt {
+  id: string
+  label: string
+  balance: number // integer cents
+  category: DebtCategory
+  updatedAt: string
 }
 
 export interface ReviewData {
@@ -42,9 +61,7 @@ export interface AppSettings {
 export interface MonthMetrics {
   totalRevenue: number
   totalExpenses: number
-  wealthBuildingTotal: number
   netCashFlow: number
-  savingsRate: number
   burnRate: number
   person1Income: number
   person2Income: number
@@ -58,9 +75,7 @@ export interface MonthMetrics {
 export interface MonthDelta {
   totalRevenue: number
   totalExpenses: number
-  wealthBuildingTotal: number
   netCashFlow: number
-  savingsRate: number
   burnRate: number
 }
 
