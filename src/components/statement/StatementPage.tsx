@@ -9,6 +9,8 @@ import { MetricsSummaryBar } from './MetricsSummaryBar'
 import { ReviewSection } from '../review/ReviewSection'
 import { formatCurrency, labelMonth } from '../../utils/formatting'
 import { computeMetrics } from '../../utils/calculations'
+import { getMonth, setMonth } from '../../utils/storage'
+import { nanoid } from './nanoid'
 import type { IncomeLineItem, ExpenseLineItem } from '../../types'
 
 interface Props {
@@ -35,6 +37,23 @@ export function StatementPage({ yearMonth }: Props) {
     const date = parse(yearMonth, 'yyyy-MM', new Date())
     const next = direction === 1 ? addMonths(date, 1) : subMonths(date, 1)
     navigate(`/statement/${format(next, 'yyyy-MM')}`)
+  }
+
+  function pushExpenseToNextMonth(item: ExpenseLineItem) {
+    const date = parse(yearMonth, 'yyyy-MM', new Date())
+    const nextYM = format(addMonths(date, 1), 'yyyy-MM')
+    const nextRecord = getMonth(nextYM) ?? {
+      yearMonth: nextYM,
+      income: [],
+      expenses: [],
+      review: { keyChanges: '', actionItems: ['', '', ''] as [string, string, string] },
+      updatedAt: new Date().toISOString(),
+    }
+    setMonth({
+      ...nextRecord,
+      expenses: [...nextRecord.expenses, { ...item, id: nanoid() }],
+      updatedAt: new Date().toISOString(),
+    })
   }
 
   const activeIncome = record.income.filter((i) => i.subcategory === 'active')
@@ -129,6 +148,7 @@ export function StatementPage({ yearMonth }: Props) {
           settings={settings}
           onUpdate={(id, u) => updateExpense(id, u as Partial<ExpenseLineItem>)}
           onDelete={deleteExpense}
+          onPushToNext={(item) => pushExpenseToNextMonth(item as ExpenseLineItem)}
         >
           <AddLineItemForm mode="expense" subcategory="fixed" symbol={sym} onAdd={addExpense} />
         </SectionTable>
@@ -140,6 +160,7 @@ export function StatementPage({ yearMonth }: Props) {
           settings={settings}
           onUpdate={(id, u) => updateExpense(id, u as Partial<ExpenseLineItem>)}
           onDelete={deleteExpense}
+          onPushToNext={(item) => pushExpenseToNextMonth(item as ExpenseLineItem)}
         >
           <AddLineItemForm mode="expense" subcategory="variable" symbol={sym} onAdd={addExpense} />
         </SectionTable>
