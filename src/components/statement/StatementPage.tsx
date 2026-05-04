@@ -39,21 +39,33 @@ export function StatementPage({ yearMonth }: Props) {
     navigate(`/statement/${format(next, 'yyyy-MM')}`)
   }
 
-  function pushExpenseToNextMonth(item: ExpenseLineItem) {
+  function nextMonthRecord() {
     const date = parse(yearMonth, 'yyyy-MM', new Date())
     const nextYM = format(addMonths(date, 1), 'yyyy-MM')
-    const nextRecord = getMonth(nextYM) ?? {
-      yearMonth: nextYM,
-      income: [],
-      expenses: [],
-      review: { keyChanges: '', actionItems: ['', '', ''] as [string, string, string] },
-      updatedAt: new Date().toISOString(),
+    return {
+      nextYM,
+      record: getMonth(nextYM) ?? {
+        yearMonth: nextYM,
+        income: [],
+        expenses: [],
+        review: { keyChanges: '', actionItems: ['', '', ''] as [string, string, string] },
+        updatedAt: new Date().toISOString(),
+      },
     }
-    setMonth({
-      ...nextRecord,
-      expenses: [...nextRecord.expenses, { ...item, id: nanoid() }],
-      updatedAt: new Date().toISOString(),
-    })
+  }
+
+  function pushIncomeToNextMonth(item: IncomeLineItem) {
+    const { nextYM, record: next } = nextMonthRecord()
+    const exists = next.income.some((i) => i.label.toLowerCase() === item.label.toLowerCase())
+    if (exists) return
+    setMonth({ ...next, yearMonth: nextYM, income: [...next.income, { ...item, id: nanoid() }], updatedAt: new Date().toISOString() })
+  }
+
+  function pushExpenseToNextMonth(item: ExpenseLineItem) {
+    const { nextYM, record: next } = nextMonthRecord()
+    const exists = next.expenses.some((e) => e.label.toLowerCase() === item.label.toLowerCase())
+    if (exists) return
+    setMonth({ ...next, yearMonth: nextYM, expenses: [...next.expenses, { ...item, id: nanoid() }], updatedAt: new Date().toISOString() })
   }
 
   const activeIncome = record.income.filter((i) => i.subcategory === 'active')
@@ -105,6 +117,7 @@ export function StatementPage({ yearMonth }: Props) {
           settings={settings}
           onUpdate={(id, u) => updateIncome(id, u as Partial<IncomeLineItem>)}
           onDelete={deleteIncome}
+          onPushToNext={(item) => pushIncomeToNextMonth(item as IncomeLineItem)}
         >
           <AddLineItemForm mode="income" subcategory="active" name1={settings.person1Name} name2={settings.person2Name} symbol={sym} onAdd={addIncome} />
         </SectionTable>
@@ -117,6 +130,7 @@ export function StatementPage({ yearMonth }: Props) {
           settings={settings}
           onUpdate={(id, u) => updateIncome(id, u as Partial<IncomeLineItem>)}
           onDelete={deleteIncome}
+          onPushToNext={(item) => pushIncomeToNextMonth(item as IncomeLineItem)}
         >
           <AddLineItemForm mode="income" subcategory="semi_active" name1={settings.person1Name} name2={settings.person2Name} symbol={sym} onAdd={addIncome} />
         </SectionTable>
@@ -129,6 +143,7 @@ export function StatementPage({ yearMonth }: Props) {
           settings={settings}
           onUpdate={(id, u) => updateIncome(id, u as Partial<IncomeLineItem>)}
           onDelete={deleteIncome}
+          onPushToNext={(item) => pushIncomeToNextMonth(item as IncomeLineItem)}
         >
           <AddLineItemForm mode="income" subcategory="passive" name1={settings.person1Name} name2={settings.person2Name} symbol={sym} onAdd={addIncome} />
         </SectionTable>
