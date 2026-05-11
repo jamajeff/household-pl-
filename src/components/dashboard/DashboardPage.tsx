@@ -1,7 +1,7 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { getIndex, getMonth } from '../../utils/storage'
+import { getIndex, getMonth, exportAllData, importAllData } from '../../utils/storage'
 import { computeMetrics } from '../../utils/calculations'
 import { computeDelta } from '../../utils/comparison'
 import { useSettings } from '../../hooks/useSettings'
@@ -46,6 +46,34 @@ export function DashboardPage() {
   }, [])
 
   const ym = currentYearMonth()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  function handleExport() {
+    const data = exportAllData()
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `household-pl-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string)
+        if (importAllData(data)) window.location.reload()
+      } catch {
+        // invalid file — silently ignore
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -54,12 +82,27 @@ export function DashboardPage() {
           <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-400 mt-0.5">Household financial overview</p>
         </div>
-        <button
-          onClick={() => navigate(`/statement/${ym}`)}
-          className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-        >
-          Open {labelMonth(ym)}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="border border-gray-200 text-gray-700 text-sm px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Export Data
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="border border-gray-200 text-gray-700 text-sm px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Import Data
+          </button>
+          <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleImportFile} />
+          <button
+            onClick={() => navigate(`/statement/${ym}`)}
+            className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Open {labelMonth(ym)}
+          </button>
+        </div>
       </div>
 
       {months.length === 0 ? (
