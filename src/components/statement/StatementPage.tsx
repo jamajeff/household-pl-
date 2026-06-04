@@ -48,7 +48,15 @@ export function StatementPage({ yearMonth }: Props) {
         yearMonth: nextYM,
         income: [],
         expenses: [],
-        review: { keyChanges: '', actionItems: ['', '', ''] as [string, string, string] },
+        review: {
+          targetDebtSnapshot: null,
+          totalDebtSnapshot: null,
+          snapshotTakenAt: null,
+          oneStepIncomeTier: '',
+          oneWin: '',
+          oneToWatch: '',
+          oneDecisionNext: '',
+        },
         updatedAt: new Date().toISOString(),
       },
     }

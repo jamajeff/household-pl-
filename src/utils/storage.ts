@@ -1,4 +1,4 @@
-import type { AppSettings, MonthRecord, Asset, Debt } from '../types'
+import type { AppSettings, MonthRecord, Asset, Debt, ReviewData } from '../types'
 
 export interface ExportedData {
   version: number
@@ -20,6 +20,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   person1Name: 'Person 1',
   person2Name: 'Person 2',
   currencySymbol: '$',
+  targetBurnRatePct: null,
+  targetDebtId: null,
 }
 
 export function getIndex(): string[] {
@@ -38,7 +40,21 @@ export function setIndex(months: string[]): void {
 export function getMonth(yearMonth: string): MonthRecord | null {
   try {
     const raw = localStorage.getItem(`${PREFIX}${yearMonth}`)
-    return raw ? JSON.parse(raw) : null
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as MonthRecord & { review?: Partial<ReviewData> }
+    const r = parsed.review ?? {}
+    return {
+      ...parsed,
+      review: {
+        targetDebtSnapshot: r.targetDebtSnapshot ?? null,
+        totalDebtSnapshot: r.totalDebtSnapshot ?? null,
+        snapshotTakenAt: r.snapshotTakenAt ?? null,
+        oneStepIncomeTier: r.oneStepIncomeTier ?? '',
+        oneWin: r.oneWin ?? '',
+        oneToWatch: r.oneToWatch ?? '',
+        oneDecisionNext: r.oneDecisionNext ?? '',
+      },
+    }
   } catch {
     return null
   }

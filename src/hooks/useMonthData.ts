@@ -9,7 +9,15 @@ function emptyRecord(yearMonth: string): MonthRecord {
     yearMonth,
     income: [],
     expenses: [],
-    review: { keyChanges: '', actionItems: ['', '', ''] },
+    review: {
+      targetDebtSnapshot: null,
+      totalDebtSnapshot: null,
+      snapshotTakenAt: null,
+      oneStepIncomeTier: '',
+      oneWin: '',
+      oneToWatch: '',
+      oneDecisionNext: '',
+    },
     updatedAt: new Date().toISOString(),
   }
 }
