@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { monthsToClearDebt, addMonthsToYearMonth } from './calculations'
+import { monthsToClearDebt, addMonthsToYearMonth, formatHeadline } from './calculations'
 
 describe('monthsToClearDebt', () => {
   it('returns exact months when balance is divisible by paid', () => {
@@ -42,5 +42,35 @@ describe('addMonthsToYearMonth', () => {
 
   it('handles non-multiple-of-12 large offsets', () => {
     expect(addMonthsToYearMonth('2026-06', 7)).toBe('2027-01')
+  })
+})
+
+describe('formatHeadline', () => {
+  const fmt = (cents: number) => `$${(Math.abs(cents) / 100).toFixed(0)}`
+
+  it('omits delta clause when no prior month', () => {
+    expect(formatHeadline(470_000, null, fmt))
+      .toBe('Net cash flow was $4700.')
+  })
+
+  it('shows "up" when delta is positive', () => {
+    expect(formatHeadline(470_000, 150_000, fmt))
+      .toBe('Net cash flow was $4700 (up $1500 vs last month).')
+  })
+
+  it('shows "down" when delta is negative', () => {
+    expect(formatHeadline(320_000, -150_000, fmt))
+      .toBe('Net cash flow was $3200 (down $1500 vs last month).')
+  })
+
+  it('omits delta clause when delta is exactly zero', () => {
+    expect(formatHeadline(470_000, 0, fmt))
+      .toBe('Net cash flow was $4700.')
+  })
+
+  it('formats negative net cash flow', () => {
+    const fmtNeg = (cents: number) => cents < 0 ? `-$${(Math.abs(cents) / 100).toFixed(0)}` : `$${(cents / 100).toFixed(0)}`
+    expect(formatHeadline(-200_000, null, fmtNeg))
+      .toBe('Net cash flow was -$2000.')
   })
 })

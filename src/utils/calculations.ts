@@ -46,3 +46,17 @@ export function addMonthsToYearMonth(yearMonth: string, months: number): string 
   const date = parse(yearMonth, 'yyyy-MM', new Date())
   return format(addMonths(date, months), 'yyyy-MM')
 }
+
+export function formatHeadline(
+  netCashFlowCents: number,
+  deltaVsPriorCents: number | null,
+  formatCurrency: (cents: number) => string,
+): string {
+  const head = `Net cash flow was ${formatCurrency(netCashFlowCents)}`
+  if (deltaVsPriorCents === null || deltaVsPriorCents === 0) {
+    return `${head}.`
+  }
+  const direction = deltaVsPriorCents > 0 ? 'up' : 'down'
+  const magnitude = formatCurrency(Math.abs(deltaVsPriorCents))
+  return `${head} (${direction} ${magnitude} vs last month).`
+}
