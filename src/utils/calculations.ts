@@ -1,3 +1,4 @@
+import { addMonths, format, parse } from 'date-fns'
 import type { MonthRecord, MonthMetrics, LineItem } from '../types'
 
 function sum(items: LineItem[]): number {
@@ -33,4 +34,29 @@ export function computeMetrics(record: MonthRecord): MonthMetrics {
     fixedExpenses,
     variableExpenses,
   }
+}
+
+export function monthsToClearDebt(balanceCents: number, paidThisMonthCents: number): number | null {
+  if (paidThisMonthCents <= 0) return null
+  if (balanceCents <= 0) return 0
+  return Math.ceil(balanceCents / paidThisMonthCents)
+}
+
+export function addMonthsToYearMonth(yearMonth: string, months: number): string {
+  const date = parse(yearMonth, 'yyyy-MM', new Date())
+  return format(addMonths(date, months), 'yyyy-MM')
+}
+
+export function formatHeadline(
+  netCashFlowCents: number,
+  deltaVsPriorCents: number | null,
+  formatCurrency: (cents: number) => string,
+): string {
+  const head = `Net cash flow was ${formatCurrency(netCashFlowCents)}`
+  if (deltaVsPriorCents === null || deltaVsPriorCents === 0) {
+    return `${head}.`
+  }
+  const direction = deltaVsPriorCents > 0 ? 'up' : 'down'
+  const magnitude = formatCurrency(Math.abs(deltaVsPriorCents))
+  return `${head} (${direction} ${magnitude} vs last month).`
 }

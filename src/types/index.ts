@@ -40,8 +40,13 @@ export interface Debt {
 }
 
 export interface ReviewData {
-  keyChanges: string
-  actionItems: [string, string, string]
+  targetDebtSnapshot: number | null   // target debt balance at month-end, in cents
+  totalDebtSnapshot: number | null    // sum of all debt balances at month-end, in cents
+  snapshotTakenAt: string | null      // ISO timestamp of last snapshot
+  oneStepIncomeTier: string           // freeform — bottom-two leverage action
+  oneWin: string
+  oneToWatch: string
+  oneDecisionNext: string
 }
 
 export interface MonthRecord {
@@ -56,6 +61,8 @@ export interface AppSettings {
   person1Name: string
   person2Name: string
   currencySymbol: string
+  targetBurnRatePct: number | null    // e.g., 70 means target <70%
+  targetDebtId: string | null         // id of a Debt record from net worth
 }
 
 export interface MonthMetrics {
