@@ -1,3 +1,4 @@
+import { addMonths, format, parse } from 'date-fns'
 import type { MonthRecord, MonthMetrics, LineItem } from '../types'
 
 function sum(items: LineItem[]): number {
@@ -39,4 +40,9 @@ export function monthsToClearDebt(balanceCents: number, paidThisMonthCents: numb
   if (paidThisMonthCents <= 0) return null
   if (balanceCents <= 0) return 0
   return Math.ceil(balanceCents / paidThisMonthCents)
+}
+
+export function addMonthsToYearMonth(yearMonth: string, months: number): string {
+  const date = parse(yearMonth, 'yyyy-MM', new Date())
+  return format(addMonths(date, months), 'yyyy-MM')
 }
