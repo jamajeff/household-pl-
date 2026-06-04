@@ -34,3 +34,9 @@ export function computeMetrics(record: MonthRecord): MonthMetrics {
     variableExpenses,
   }
 }
+
+export function monthsToClearDebt(balanceCents: number, paidThisMonthCents: number): number | null {
+  if (paidThisMonthCents <= 0) return null
+  if (balanceCents <= 0) return 0
+  return Math.ceil(balanceCents / paidThisMonthCents)
+}
