@@ -88,9 +88,11 @@ export function ReviewSection({
 
   // Clear-by projection
   let clearBy: string | null = null
+  let alreadyCleared = false
   if (targetBalanceDisplay !== null && paidThisMonth !== null) {
     const months = monthsToClearDebt(targetBalanceDisplay, paidThisMonth)
-    if (months !== null) clearBy = labelMonth(addMonthsToYearMonth(record.yearMonth, months))
+    if (months === 0) alreadyCleared = true
+    else if (months !== null) clearBy = labelMonth(addMonthsToYearMonth(record.yearMonth, months))
   }
 
   // Income tier %
@@ -175,7 +177,7 @@ export function ReviewSection({
                   <>
                     <span className="font-semibold text-gray-900">{targetDebt.label}</span> —{' '}
                     {paidThisMonth === null ? (
-                      <span className="text-gray-400">— this month</span>
+                      <span className="text-gray-400">no prior snapshot</span>
                     ) : paidThisMonth < 0 ? (
                       <>
                         <span className="font-semibold text-red-500">balance increased {fmt(Math.abs(paidThisMonth))}</span> this month
@@ -201,7 +203,11 @@ export function ReviewSection({
               <span className="text-gray-400">•</span>
               <span>
                 On track to clear #1 by:{' '}
-                {clearBy ? <span className="font-semibold text-gray-900">{clearBy}</span> : <span className="text-gray-400">—</span>}
+                {alreadyCleared
+                  ? <span className="font-semibold text-emerald-600">Already cleared</span>
+                  : clearBy
+                    ? <span className="font-semibold text-gray-900">{clearBy}</span>
+                    : <span className="text-gray-400">—</span>}
               </span>
             </li>
           </ul>
@@ -277,7 +283,8 @@ export function ReviewSection({
               type="text"
               value={review.oneWin}
               onChange={(e) => setField('oneWin', e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="e.g. paid extra on car loan"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-300"
             />
           </label>
 
@@ -287,7 +294,8 @@ export function ReviewSection({
               type="text"
               value={review.oneToWatch}
               onChange={(e) => setField('oneToWatch', e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="e.g. variable spending crept up"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-300"
             />
           </label>
 
@@ -297,7 +305,8 @@ export function ReviewSection({
               type="text"
               value={review.oneDecisionNext}
               onChange={(e) => setField('oneDecisionNext', e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="e.g. automate savings transfer"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-300"
             />
           </label>
         </div>
