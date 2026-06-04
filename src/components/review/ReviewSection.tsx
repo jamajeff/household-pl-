@@ -94,8 +94,7 @@ export function ReviewSection({
   }
 
   // Income tier %
-  const totalRevenue = metrics.totalRevenue
-  const tierPct = (amount: number) => totalRevenue > 0 ? (amount / totalRevenue) * 100 : null
+  const tierPct = (amount: number) => metrics.totalRevenue > 0 ? (amount / metrics.totalRevenue) * 100 : null
 
   // Snapshot action
   function takeSnapshot() {
@@ -175,8 +174,17 @@ export function ReviewSection({
                 {targetDebt ? (
                   <>
                     <span className="font-semibold text-gray-900">{targetDebt.label}</span> —{' '}
-                    paid {paidThisMonth !== null ? <span className="font-semibold text-gray-900">{fmt(Math.max(0, paidThisMonth))}</span> : <span className="text-gray-400">—</span>}{' '}
-                    this month, balance now{' '}
+                    {paidThisMonth === null ? (
+                      <span className="text-gray-400">— this month</span>
+                    ) : paidThisMonth < 0 ? (
+                      <>
+                        <span className="font-semibold text-red-500">balance increased {fmt(Math.abs(paidThisMonth))}</span> this month
+                      </>
+                    ) : (
+                      <>
+                        paid <span className="font-semibold text-gray-900">{fmt(paidThisMonth)}</span> this month
+                      </>
+                    )}, balance now{' '}
                     {targetBalanceDisplay !== null ? (
                       <>
                         <span className="font-semibold text-gray-900">{fmt(targetBalanceDisplay)}</span>
@@ -294,7 +302,7 @@ export function ReviewSection({
           </label>
         </div>
 
-        <div className="border-t-2 border-gray-100 pt-2" />
+        <div className="border-t border-gray-100" />
 
         {/* Delta highlights (unchanged) */}
         {delta && (
