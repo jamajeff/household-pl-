@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react'
 import { useSettings } from '../../hooks/useSettings'
+import { useNetWorth } from '../../hooks/useNetWorth'
 import { exportAllData, importAllData } from '../../utils/storage'
 import type { AppSettings } from '../../types'
 
 export function SettingsPage() {
   const { settings, save } = useSettings()
+  const { debts } = useNetWorth()
   const [form, setForm] = useState<AppSettings>(settings)
   const [saved, setSaved] = useState(false)
   const [importError, setImportError] = useState(false)
@@ -101,6 +103,71 @@ export function SettingsPage() {
           {saved ? '✓ Saved' : 'Save Settings'}
         </button>
       </form>
+
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Targets</h2>
+        <p className="text-sm text-gray-400 mb-4">
+          Used to populate the Monthly Review template.
+        </p>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-5">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              Target burn rate (%)
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={form.targetBurnRatePct ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value
+                setForm({
+                  ...form,
+                  targetBurnRatePct: raw === '' ? null : Number(raw),
+                })
+              }}
+              className="w-32 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="70"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">Review shows "(target: &lt;NN%)"; leave blank to hide.</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              #1 target debt
+            </label>
+            <select
+              value={form.targetDebtId ?? ''}
+              onChange={(e) => setForm({
+                ...form,
+                targetDebtId: e.target.value === '' ? null : e.target.value,
+              })}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+            >
+              <option value="">— None —</option>
+              {debts.map((d) => (
+                <option key={d.id} value={d.id}>{d.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-400 mt-1.5">
+              Pick the debt you're attacking first. Manage debts on the Net Worth page.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              save(form)
+              setSaved(true)
+              setTimeout(() => setSaved(false), 2000)
+            }}
+            className="w-full bg-gray-900 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-gray-700 transition-colors font-medium"
+          >
+            {saved ? '✓ Saved' : 'Save Targets'}
+          </button>
+        </div>
+      </div>
 
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-1">Data</h2>
