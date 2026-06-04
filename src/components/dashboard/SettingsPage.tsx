@@ -164,7 +164,7 @@ export function SettingsPage() {
             }}
             className="w-full bg-gray-900 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-gray-700 transition-colors font-medium"
           >
-            {saved ? '✓ Saved' : 'Save Targets'}
+            {saved ? '✓ Saved' : 'Save'}
           </button>
         </div>
       </div>
