@@ -207,9 +207,10 @@ export function StatementPage({ yearMonth }: Props) {
       {/* Monthly Review */}
       <ReviewSection
         record={record}
+        metrics={metrics}
         delta={delta}
         lineItemDeltas={lineItemDeltas}
-        priorYM={priorYM}
+        priorReview={priorRecord?.review ?? null}
         settings={settings}
         onUpdateReview={updateReview}
       />
