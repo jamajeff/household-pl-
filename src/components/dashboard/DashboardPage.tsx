@@ -17,8 +17,7 @@ export function DashboardPage() {
   const { settings } = useSettings()
   const sym = settings.currencySymbol
   const { debts } = useNetWorth()
-  const thisMonth = getMonth(currentYearMonth())
-  const rollingAmount = thisMonth?.rolling.amount ?? settings.rollingAmount
+  const rollingAmount = settings.rollingAmount
   const queueTop = buildDebtQueue(debts, settings.queueGrouping, rollingAmount)[0] ?? null
 
   const { months, latest, delta } = useMemo(() => {
@@ -113,11 +112,15 @@ export function DashboardPage() {
 
       {queueTop && (
         <div className="bg-gray-900 text-white rounded-xl p-5 mb-6">
-          <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Current Rolling target</p>
+          <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">
+            {rollingAmount > 0 ? 'Current Rolling target' : 'Highest-APR debt'}
+          </p>
           <p className="text-2xl font-bold text-emerald-400">{queueTop.debt.label}</p>
           <p className="text-sm text-gray-300 mt-1">
-            {formatCurrency(queueTop.debt.balance, sym)} @ {queueTop.debt.apr}% ·{' '}
-            ~{queueTop.monthsToClear ?? '—'} months at {formatCurrency(rollingAmount, sym)}/mo
+            {formatCurrency(queueTop.debt.balance, sym)} @ {queueTop.debt.apr}%
+            {rollingAmount > 0
+              ? ` · ~${queueTop.monthsToClear ?? '—'} months at ${formatCurrency(rollingAmount, sym)}/mo`
+              : ' · set a rolling amount in Settings to project payoff'}
           </p>
         </div>
       )}
