@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { debtGroup, buildDebtQueue, utilizationPct } from './debt'
-import type { Debt, DebtGroup } from '../types'
+import { debtGroup, buildDebtQueue, utilizationPct, computeDebtDelta } from './debt'
+import type { Debt, DebtGroup, DebtSnapshot } from '../types'
 
 function card(id: string, apr: number, balance: number, creditLimit?: number): Debt {
   return { id, label: id, balance, category: 'credit_card', kind: 'credit_card', apr, minPayment: 0, autopay: true, creditLimit, updatedAt: 'x' }
@@ -43,5 +43,42 @@ describe('utilizationPct', () => {
     expect(utilizationPct(800000, 2500000)).toBeCloseTo(32, 1)
     expect(utilizationPct(800000, undefined)).toBeNull()
     expect(utilizationPct(800000, 0)).toBeNull()
+  })
+})
+
+describe('computeDebtDelta', () => {
+  const amex = card('amex', 24.99, 4800000)
+  const sofi = loan('sofi', 7.2, 5800000, 'cash')
+  const registry: Debt[] = [amex, sofi]
+
+  function snap(debtId: string, balance: number): DebtSnapshot {
+    return { debtId, balance, minPayment: 0 }
+  }
+
+  it('splits paydown by kind (positive = paid down)', () => {
+    const prior = [snap('amex', 4800000), snap('sofi', 5800000)]
+    const current = [snap('amex', 4500000), snap('sofi', 5700000)]
+    const delta = computeDebtDelta(current, prior, registry)
+    expect(delta.creditCardDelta).toBe(300000) // 4.8M -> 4.5M
+    expect(delta.loanDelta).toBe(100000)        // 5.8M -> 5.7M
+    expect(delta.totalDelta).toBe(400000)
+  })
+
+  it('skips snapshots with no prior baseline', () => {
+    const prior = [snap('amex', 4800000)]
+    const current = [snap('amex', 4500000), snap('sofi', 5700000)] // sofi has no prior
+    const delta = computeDebtDelta(current, prior, registry)
+    expect(delta.creditCardDelta).toBe(300000)
+    expect(delta.loanDelta).toBe(0)
+    expect(delta.totalDelta).toBe(300000)
+  })
+
+  it('treats a debt absent from the registry as a loan', () => {
+    const prior = [snap('ghost', 1000000)]
+    const current = [snap('ghost', 900000)]
+    const delta = computeDebtDelta(current, prior, []) // empty registry
+    expect(delta.creditCardDelta).toBe(0)
+    expect(delta.loanDelta).toBe(100000)
+    expect(delta.totalDelta).toBe(100000)
   })
 })
