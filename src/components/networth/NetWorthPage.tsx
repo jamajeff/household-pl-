@@ -138,7 +138,9 @@ function AddDebtForm({ onAdd }: { onAdd: (debt: Debt) => void }) {
   const [autopay, setAutopay] = useState(true)
 
   function reset() {
-    setLabel(''); setBalance(''); setApr(''); setMinPayment(''); setCreditLimit(''); setOpen(false)
+    setLabel(''); setBalance(''); setApr(''); setMinPayment(''); setCreditLimit('')
+    setKind('credit_card'); setIssuer('chase'); setLoanType('student'); setAutopay(true)
+    setOpen(false)
   }
 
   function submit(e: React.FormEvent) {
