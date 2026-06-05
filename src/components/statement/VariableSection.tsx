@@ -18,10 +18,11 @@ interface Props {
   items: ExpenseLineItem[]
   symbol: string
   onAdd: (item: ExpenseLineItem) => void
+  onUpdate: (id: string, updates: Partial<ExpenseLineItem>) => void
   onDelete: (id: string) => void
 }
 
-export function VariableSection({ items, symbol, onAdd, onDelete }: Props) {
+export function VariableSection({ items, symbol, onAdd, onUpdate, onDelete }: Props) {
   const [open, setOpen] = useState(false)
   const [label, setLabel] = useState('')
   const [amount, setAmount] = useState(0)
@@ -45,16 +46,7 @@ export function VariableSection({ items, symbol, onAdd, onDelete }: Props) {
       <table className="w-full">
         <tbody>
           {items.map((item) => (
-            <tr key={item.id} className="border-b border-gray-50 group hover:bg-gray-50/50">
-              <td className="py-2.5 pl-4 pr-2 text-sm text-gray-700">
-                {item.label}
-                {item.variableCategory && <span className="ml-2 text-[11px] text-gray-400 uppercase">{item.variableCategory}</span>}
-              </td>
-              <td className="py-2.5 px-2 text-sm text-right font-medium tabular-nums text-gray-800">{formatCurrency(item.amount, symbol)}</td>
-              <td className="py-2.5 pr-4 pl-2">
-                <button onClick={() => onDelete(item.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 text-xs px-1.5 py-1 rounded hover:bg-red-50 transition">✕</button>
-              </td>
-            </tr>
+            <VariableRow key={item.id} item={item} symbol={symbol} onUpdate={onUpdate} onDelete={onDelete} />
           ))}
           {open ? (
             <tr className="bg-red-50/40">
@@ -84,5 +76,69 @@ export function VariableSection({ items, symbol, onAdd, onDelete }: Props) {
         </tbody>
       </table>
     </div>
+  )
+}
+
+function VariableRow({
+  item, symbol, onUpdate, onDelete,
+}: {
+  item: ExpenseLineItem
+  symbol: string
+  onUpdate: (id: string, updates: Partial<ExpenseLineItem>) => void
+  onDelete: (id: string) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [label, setLabel] = useState(item.label)
+  const [amount, setAmount] = useState(item.amount)
+  const [variableCategory, setVariableCategory] = useState<VariableCategory>(item.variableCategory ?? 'other')
+
+  function save() {
+    if (!label.trim() || amount <= 0) return
+    onUpdate(item.id, { label: label.trim(), amount, variableCategory })
+    setEditing(false)
+  }
+
+  function cancel() {
+    setLabel(item.label)
+    setAmount(item.amount)
+    setVariableCategory(item.variableCategory ?? 'other')
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <tr className="bg-red-50/40">
+        <td colSpan={3} className="p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <input autoFocus value={label} onChange={(e) => setLabel(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel() }}
+              className="flex-1 min-w-40 border border-red-200 rounded px-2 py-1.5 text-sm bg-white" />
+            <select value={variableCategory} onChange={(e) => setVariableCategory(e.target.value as VariableCategory)} className="border border-red-200 rounded px-2 py-1.5 text-xs bg-white">
+              {VAR_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+            <CurrencyInput value={amount} onChange={setAmount} symbol={symbol}
+              className="w-28 border border-red-200 rounded pr-2 py-1.5 text-sm bg-white" />
+            <button onClick={save} className="bg-red-500 text-white text-xs font-medium px-3 py-1.5 rounded hover:bg-red-600">Save</button>
+            <button onClick={cancel} className="text-gray-400 text-xs px-2 py-1.5 rounded hover:bg-gray-100">Cancel</button>
+          </div>
+        </td>
+      </tr>
+    )
+  }
+
+  return (
+    <tr className="border-b border-gray-50 group hover:bg-gray-50/50">
+      <td className="py-2.5 pl-4 pr-2 text-sm text-gray-700">
+        {item.label}
+        {item.variableCategory && <span className="ml-2 text-[11px] text-gray-400 uppercase">{item.variableCategory}</span>}
+      </td>
+      <td className="py-2.5 px-2 text-sm text-right font-medium tabular-nums text-gray-800">{formatCurrency(item.amount, symbol)}</td>
+      <td className="py-2.5 pr-4 pl-2">
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
+          <button onClick={() => setEditing(true)} className="text-gray-400 hover:text-blue-500 text-xs px-1.5 py-1 rounded hover:bg-blue-50">Edit</button>
+          <button onClick={() => onDelete(item.id)} className="text-gray-400 hover:text-red-500 text-xs px-1.5 py-1 rounded hover:bg-red-50">✕</button>
+        </div>
+      </td>
+    </tr>
   )
 }

@@ -31,7 +31,7 @@ export function StatementPage({ yearMonth }: Props) {
   const {
     record,
     addIncome, updateIncome, deleteIncome,
-    addExpense, deleteExpense,
+    addExpense, updateExpense, deleteExpense,
     updateReview,
     setDebtSnapshot, updateRolling,
     copyFromRecord,
@@ -180,6 +180,7 @@ export function StatementPage({ yearMonth }: Props) {
           items={fixedBills}
           symbol={sym}
           onAdd={addExpense}
+          onUpdate={updateExpense}
           onDelete={deleteExpense}
         />
 
@@ -189,6 +190,7 @@ export function StatementPage({ yearMonth }: Props) {
           snapshots={record.debtSnapshots}
           symbol={sym}
           onSetSnapshot={handleSetSnapshot}
+          onUpdateDebt={updateDebt}
         />
 
         <DebtMinimumsSection
@@ -197,6 +199,7 @@ export function StatementPage({ yearMonth }: Props) {
           snapshots={record.debtSnapshots}
           symbol={sym}
           onSetSnapshot={handleSetSnapshot}
+          onUpdateDebt={updateDebt}
         />
 
         <RollingSection
@@ -211,6 +214,7 @@ export function StatementPage({ yearMonth }: Props) {
           items={variableItems}
           symbol={sym}
           onAdd={addExpense}
+          onUpdate={updateExpense}
           onDelete={deleteExpense}
         />
       </div>

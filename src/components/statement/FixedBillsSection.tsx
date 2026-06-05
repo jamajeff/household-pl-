@@ -18,10 +18,11 @@ interface Props {
   items: ExpenseLineItem[]
   symbol: string
   onAdd: (item: ExpenseLineItem) => void
+  onUpdate: (id: string, updates: Partial<ExpenseLineItem>) => void
   onDelete: (id: string) => void
 }
 
-export function FixedBillsSection({ items, symbol, onAdd, onDelete }: Props) {
+export function FixedBillsSection({ items, symbol, onAdd, onUpdate, onDelete }: Props) {
   const [open, setOpen] = useState(false)
   const [label, setLabel] = useState('')
   const [amount, setAmount] = useState(0)
@@ -60,20 +61,7 @@ export function FixedBillsSection({ items, symbol, onAdd, onDelete }: Props) {
       <table className="w-full">
         <tbody>
           {items.map((item) => (
-            <tr key={item.id} className="border-b border-gray-50 group hover:bg-gray-50/50">
-              <td className="py-2.5 pl-4 pr-2 text-sm text-gray-700">
-                {item.label}
-                {item.billCategory && <span className="ml-2 text-[11px] text-gray-400 uppercase">{item.billCategory}</span>}
-                {item.autopay && <span className="ml-1.5 text-[11px] text-emerald-500">autopay</span>}
-                {item.note && <span className="block text-[11px] text-gray-400">{item.note}</span>}
-              </td>
-              <td className="py-2.5 px-2 text-sm text-right font-medium tabular-nums text-gray-800">{formatCurrency(item.amount, symbol)}</td>
-              <td className="py-2.5 pr-4 pl-2">
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
-                  <button onClick={() => onDelete(item.id)} className="text-gray-400 hover:text-red-500 text-xs px-1.5 py-1 rounded hover:bg-red-50">✕</button>
-                </div>
-              </td>
-            </tr>
+            <FixedBillRow key={item.id} item={item} symbol={symbol} onUpdate={onUpdate} onDelete={onDelete} />
           ))}
           {open ? (
             <tr className="bg-orange-50/40">
@@ -112,5 +100,80 @@ export function FixedBillsSection({ items, symbol, onAdd, onDelete }: Props) {
         </tbody>
       </table>
     </div>
+  )
+}
+
+function FixedBillRow({
+  item, symbol, onUpdate, onDelete,
+}: {
+  item: ExpenseLineItem
+  symbol: string
+  onUpdate: (id: string, updates: Partial<ExpenseLineItem>) => void
+  onDelete: (id: string) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [label, setLabel] = useState(item.label)
+  const [amount, setAmount] = useState(item.amount)
+  const [billCategory, setBillCategory] = useState<FixedBillCategory>(item.billCategory ?? 'housing')
+  const [autopay, setAutopay] = useState(item.autopay ?? false)
+
+  function save() {
+    if (!label.trim() || amount <= 0) return
+    onUpdate(item.id, { label: label.trim(), amount, billCategory, autopay })
+    setEditing(false)
+  }
+
+  function cancel() {
+    setLabel(item.label)
+    setAmount(item.amount)
+    setBillCategory(item.billCategory ?? 'housing')
+    setAutopay(item.autopay ?? false)
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <tr className="bg-orange-50/40">
+        <td colSpan={3} className="p-3">
+          <div className="space-y-2">
+            <input autoFocus value={label} onChange={(e) => setLabel(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel() }}
+              className="w-full border border-orange-200 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            <div className="flex gap-2">
+              <select value={billCategory} onChange={(e) => setBillCategory(e.target.value as FixedBillCategory)} className="border border-orange-200 rounded px-2 py-1.5 text-xs bg-white flex-1">
+                {BILL_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+              <CurrencyInput value={amount} onChange={setAmount} symbol={symbol}
+                className="w-32 border border-orange-200 rounded pr-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            </div>
+            <label className="flex items-center gap-2 text-xs text-gray-600">
+              <input type="checkbox" checked={autopay} onChange={(e) => setAutopay(e.target.checked)} /> Autopay
+            </label>
+            <div className="flex gap-2">
+              <button onClick={save} className="bg-orange-600 text-white text-xs font-medium px-3 py-1.5 rounded hover:bg-orange-700">Save</button>
+              <button onClick={cancel} className="text-gray-400 text-xs px-3 py-1.5 rounded hover:bg-gray-100">Cancel</button>
+            </div>
+          </div>
+        </td>
+      </tr>
+    )
+  }
+
+  return (
+    <tr className="border-b border-gray-50 group hover:bg-gray-50/50">
+      <td className="py-2.5 pl-4 pr-2 text-sm text-gray-700">
+        {item.label}
+        {item.billCategory && <span className="ml-2 text-[11px] text-gray-400 uppercase">{item.billCategory}</span>}
+        {item.autopay && <span className="ml-1.5 text-[11px] text-emerald-500">autopay</span>}
+        {item.note && <span className="block text-[11px] text-gray-400">{item.note}</span>}
+      </td>
+      <td className="py-2.5 px-2 text-sm text-right font-medium tabular-nums text-gray-800">{formatCurrency(item.amount, symbol)}</td>
+      <td className="py-2.5 pr-4 pl-2">
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
+          <button onClick={() => setEditing(true)} className="text-gray-400 hover:text-blue-500 text-xs px-1.5 py-1 rounded hover:bg-blue-50">Edit</button>
+          <button onClick={() => onDelete(item.id)} className="text-gray-400 hover:text-red-500 text-xs px-1.5 py-1 rounded hover:bg-red-50">✕</button>
+        </div>
+      </td>
+    </tr>
   )
 }

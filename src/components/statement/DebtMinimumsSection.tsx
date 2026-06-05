@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { CurrencyInput } from '../shared/CurrencyInput'
 import { formatCurrency } from '../../utils/formatting'
 import { utilizationPct } from '../../utils/debt'
@@ -10,6 +10,7 @@ interface Props {
   snapshots: DebtSnapshot[]        // current month's snapshots
   symbol: string
   onSetSnapshot: (debtId: string, data: { balance: number; minPayment: number }) => void
+  onUpdateDebt: (debtId: string, updates: Partial<Debt>) => void  // edits the registry (APR, etc.)
 }
 
 function utilizationColor(pct: number | null): string {
@@ -19,7 +20,7 @@ function utilizationColor(pct: number | null): string {
   return 'text-amber-500'
 }
 
-export function DebtMinimumsSection({ kind, debts, snapshots, symbol, onSetSnapshot }: Props) {
+export function DebtMinimumsSection({ kind, debts, snapshots, symbol, onSetSnapshot, onUpdateDebt }: Props) {
   const relevant = debts.filter((d) => d.kind === kind)
   const snapById = new Map(snapshots.map((s) => [s.debtId, s]))
 
@@ -54,7 +55,9 @@ export function DebtMinimumsSection({ kind, debts, snapshots, symbol, onSetSnaps
                 <tr key={d.id} className="border-b border-gray-50">
                   <td className="py-2 pl-4 pr-2 text-sm text-gray-700">
                     {d.label}
-                    <span className="ml-2 text-[11px] text-gray-400">{d.apr ? `${d.apr}%` : 'no APR'}</span>
+                    {/* APR lives on the debt registry; editing here updates it everywhere.
+                        key resets the editor's draft when the saved APR changes. */}
+                    <AprCell key={`apr-${d.id}-${d.apr}`} apr={d.apr} onCommit={(v) => onUpdateDebt(d.id, { apr: v })} />
                     {util !== null && <span className={`ml-2 text-[11px] ${utilizationColor(util)}`}>{util.toFixed(0)}% util</span>}
                   </td>
                   <td className="py-2 px-1">
@@ -74,6 +77,50 @@ export function DebtMinimumsSection({ kind, debts, snapshots, symbol, onSetSnaps
         </table>
       )}
     </div>
+  )
+}
+
+function AprCell({ apr, onCommit }: { apr: number; onCommit: (v: number) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(apr ? String(apr) : '')
+  const skipCommit = useRef(false) // set on Escape so the ensuing blur cancels instead of saving
+
+  function commit() {
+    if (skipCommit.current) { skipCommit.current = false; setEditing(false); return }
+    const v = parseFloat(draft)
+    onCommit(Number.isFinite(v) && v >= 0 ? v : 0)
+    setEditing(false)
+  }
+
+  if (!editing) {
+    return (
+      <button
+        onClick={() => setEditing(true)}
+        title="Edit APR"
+        className={`ml-2 text-[11px] underline decoration-dotted ${apr ? 'text-gray-400 hover:text-blue-500' : 'text-blue-400 hover:text-blue-600'}`}
+      >
+        {apr ? `${apr}%` : 'set APR'}
+      </button>
+    )
+  }
+
+  return (
+    <span className="ml-2 inline-flex items-center gap-0.5">
+      <input
+        autoFocus
+        inputMode="decimal"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur()
+          else if (e.key === 'Escape') { skipCommit.current = true; e.currentTarget.blur() }
+        }}
+        onBlur={commit}
+        placeholder="APR"
+        className="w-14 border border-blue-300 rounded px-1 py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-400"
+      />
+      <span className="text-[11px] text-gray-400">%</span>
+    </span>
   )
 }
 
