@@ -1,4 +1,4 @@
-import type { AppSettings, MonthRecord, Asset, Debt, ReviewData } from '../types'
+import type { AppSettings, MonthRecord, Asset, Debt, ReviewData, DebtSnapshot, RollingPayment, DebtKind, LoanType } from '../types'
 
 export interface ExportedData {
   version: number
@@ -16,12 +16,18 @@ const SETTINGS_KEY = `${PREFIX}settings`
 const ASSETS_KEY = `${PREFIX}assets`
 const DEBTS_KEY = `${PREFIX}debts`
 
+export const DEFAULT_ROLLING_CENTS = 800000 // $8,000
+
 const DEFAULT_SETTINGS: AppSettings = {
   person1Name: 'Person 1',
   person2Name: 'Person 2',
   currencySymbol: '$',
   targetBurnRatePct: null,
   targetDebtId: null,
+  rollingAmount: DEFAULT_ROLLING_CENTS,
+  burnRateOverrideMonths: 2,
+  queueGrouping: ['credit_card', 'cash', 'student', 'auto', 'mortgage', 'other'],
+  payoffMode: 'apr',
 }
 
 export function getIndex(): string[] {
@@ -41,10 +47,21 @@ export function getMonth(yearMonth: string): MonthRecord | null {
   try {
     const raw = localStorage.getItem(`${PREFIX}${yearMonth}`)
     if (!raw) return null
-    const parsed = JSON.parse(raw) as MonthRecord & { review?: Partial<ReviewData> }
+    const parsed = JSON.parse(raw) as MonthRecord & {
+      review?: Partial<ReviewData>
+      debtSnapshots?: DebtSnapshot[]
+      rolling?: Partial<RollingPayment>
+    }
     const r = parsed.review ?? {}
+    const roll = parsed.rolling ?? {}
     return {
       ...parsed,
+      debtSnapshots: Array.isArray(parsed.debtSnapshots) ? parsed.debtSnapshots : [],
+      rolling: {
+        amount: roll.amount ?? DEFAULT_ROLLING_CENTS,
+        paidThisMonth: roll.paidThisMonth ?? 0,
+        targetDebtId: roll.targetDebtId ?? null,
+      },
       review: {
         targetDebtSnapshot: r.targetDebtSnapshot ?? null,
         totalDebtSnapshot: r.totalDebtSnapshot ?? null,
@@ -102,10 +119,33 @@ export function setAssets(assets: Asset[]): void {
   localStorage.setItem(ASSETS_KEY, JSON.stringify(assets))
 }
 
+function inferKind(category: Debt['category']): DebtKind {
+  return category === 'credit_card' ? 'credit_card' : 'loan'
+}
+
+function inferLoanType(category: Debt['category']): LoanType | undefined {
+  switch (category) {
+    case 'student': return 'student'
+    case 'auto': return 'auto'
+    case 'mortgage': return 'mortgage'
+    case 'other': return 'other'
+    default: return undefined // credit_card -> no loanType
+  }
+}
+
 export function getDebts(): Debt[] {
   try {
     const raw = localStorage.getItem(DEBTS_KEY)
-    return raw ? JSON.parse(raw) : []
+    if (!raw) return []
+    const arr = JSON.parse(raw) as Array<Partial<Debt> & { id: string; label: string; balance: number; category: Debt['category']; updatedAt: string }>
+    return arr.map((d) => ({
+      ...d,
+      kind: d.kind ?? inferKind(d.category),
+      apr: d.apr ?? 0,
+      minPayment: d.minPayment ?? 0,
+      autopay: d.autopay ?? false,
+      loanType: d.loanType ?? (d.kind === 'credit_card' || d.category === 'credit_card' ? undefined : inferLoanType(d.category)),
+    })) as Debt[]
   } catch {
     return []
   }
@@ -120,7 +160,7 @@ export function exportAllData(): ExportedData {
   const months: Record<string, MonthRecord | null> = {}
   for (const ym of index) months[ym] = getMonth(ym)
   return {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     settings: getSettings(),
     index,
