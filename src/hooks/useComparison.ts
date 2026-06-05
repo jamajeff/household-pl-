@@ -2,9 +2,9 @@ import { useMemo } from 'react'
 import { getMonth } from '../utils/storage'
 import { computeMetrics } from '../utils/calculations'
 import { priorYearMonth, computeDelta, diffLineItems } from '../utils/comparison'
-import type { MonthRecord, MonthMetrics, MonthDelta, LineItemDelta } from '../types'
+import type { MonthRecord, MonthMetrics, MonthDelta, LineItemDelta, Debt } from '../types'
 
-export function useComparison(record: MonthRecord | null): {
+export function useComparison(record: MonthRecord | null, debts: Debt[] = []): {
   priorRecord: MonthRecord | null
   priorMetrics: MonthMetrics | null
   currentMetrics: MonthMetrics | null
@@ -17,7 +17,7 @@ export function useComparison(record: MonthRecord | null): {
       return { priorRecord: null, priorMetrics: null, currentMetrics: null, delta: null, lineItemDeltas: [], priorYM: null }
     }
 
-    const currentMetrics = computeMetrics(record)
+    const currentMetrics = computeMetrics(record, debts)
     const priorYM = priorYearMonth(record.yearMonth)
     const priorRecord = getMonth(priorYM)
 
@@ -25,7 +25,7 @@ export function useComparison(record: MonthRecord | null): {
       return { priorRecord: null, priorMetrics: null, currentMetrics, delta: null, lineItemDeltas: [], priorYM }
     }
 
-    const priorMetrics = computeMetrics(priorRecord)
+    const priorMetrics = computeMetrics(priorRecord, debts)
     const delta = computeDelta(currentMetrics, priorMetrics)
 
     const allCurrent = [...record.income, ...record.expenses]
@@ -33,5 +33,5 @@ export function useComparison(record: MonthRecord | null): {
     const lineItemDeltas = diffLineItems(allCurrent, allPrior)
 
     return { priorRecord, priorMetrics, currentMetrics, delta, lineItemDeltas, priorYM }
-  }, [record])
+  }, [record, debts])
 }

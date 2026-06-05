@@ -3,6 +3,7 @@ import { format, addMonths, subMonths, parse } from 'date-fns'
 import { useMonthData } from '../../hooks/useMonthData'
 import { useComparison } from '../../hooks/useComparison'
 import { useSettings } from '../../hooks/useSettings'
+import { useNetWorth } from '../../hooks/useNetWorth'
 import { SectionTable } from './SectionTable'
 import { AddLineItemForm } from './AddLineItemForm'
 import { MetricsSummaryBar } from './MetricsSummaryBar'
@@ -20,6 +21,7 @@ interface Props {
 export function StatementPage({ yearMonth }: Props) {
   const navigate = useNavigate()
   const { settings } = useSettings()
+  const { debts } = useNetWorth()
   const {
     record,
     addIncome, updateIncome, deleteIncome,
@@ -28,8 +30,8 @@ export function StatementPage({ yearMonth }: Props) {
     copyFromRecord,
   } = useMonthData(yearMonth)
 
-  const { delta, priorYM, priorRecord, lineItemDeltas } = useComparison(record)
-  const metrics = computeMetrics(record)
+  const { delta, priorYM, priorRecord, lineItemDeltas } = useComparison(record, debts)
+  const metrics = computeMetrics(record, debts)
 
   const sym = settings.currencySymbol
 
