@@ -6,13 +6,19 @@ import { useSettings } from '../../hooks/useSettings'
 import { useNetWorth } from '../../hooks/useNetWorth'
 import { SectionTable } from './SectionTable'
 import { AddLineItemForm } from './AddLineItemForm'
+import { FixedBillsSection } from './FixedBillsSection'
+import { DebtMinimumsSection } from './DebtMinimumsSection'
+import { RollingSection } from './RollingSection'
+import { VariableSection } from './VariableSection'
+import { DebtTrackingSection } from '../debt/DebtTrackingSection'
 import { MetricsSummaryBar } from './MetricsSummaryBar'
 import { ReviewSection } from '../review/ReviewSection'
 import { formatCurrency, labelMonth } from '../../utils/formatting'
 import { computeMetrics } from '../../utils/calculations'
+import { buildDebtQueue } from '../../utils/debt'
 import { getMonth, setMonth } from '../../utils/storage'
 import { nanoid } from './nanoid'
-import type { IncomeLineItem, ExpenseLineItem } from '../../types'
+import type { IncomeLineItem } from '../../types'
 
 interface Props {
   yearMonth: string
@@ -21,12 +27,13 @@ interface Props {
 export function StatementPage({ yearMonth }: Props) {
   const navigate = useNavigate()
   const { settings } = useSettings()
-  const { debts } = useNetWorth()
+  const { debts, updateDebt } = useNetWorth()
   const {
     record,
     addIncome, updateIncome, deleteIncome,
-    addExpense, updateExpense, deleteExpense,
+    addExpense, deleteExpense,
     updateReview,
+    setDebtSnapshot, updateRolling,
     copyFromRecord,
   } = useMonthData(yearMonth)
 
@@ -50,6 +57,8 @@ export function StatementPage({ yearMonth }: Props) {
         yearMonth: nextYM,
         income: [],
         expenses: [],
+        debtSnapshots: [],
+        rolling: { amount: settings.rollingAmount, paidThisMonth: 0, targetDebtId: null },
         review: {
           targetDebtSnapshot: null,
           totalDebtSnapshot: null,
@@ -71,26 +80,19 @@ export function StatementPage({ yearMonth }: Props) {
     setMonth({ ...next, yearMonth: nextYM, income: [...next.income, { ...item, id: nanoid() }], updatedAt: new Date().toISOString() })
   }
 
-  function pushExpenseToNextMonth(item: ExpenseLineItem) {
-    const { nextYM, record: next } = nextMonthRecord()
-    const exists = next.expenses.some((e) => e.label.toLowerCase() === item.label.toLowerCase())
-    if (exists) return
-    setMonth({ ...next, yearMonth: nextYM, expenses: [...next.expenses, { ...item, id: nanoid() }], updatedAt: new Date().toISOString() })
-  }
-
-  function pushAllExpensesToNextMonth(items: ExpenseLineItem[]) {
-    const { nextYM, record: next } = nextMonthRecord()
-    const existing = new Set(next.expenses.map((e) => e.label.toLowerCase()))
-    const toAdd = items.filter((i) => !existing.has(i.label.toLowerCase()))
-    if (toAdd.length === 0) return
-    setMonth({ ...next, yearMonth: nextYM, expenses: [...next.expenses, ...toAdd.map((i) => ({ ...i, id: nanoid() }))], updatedAt: new Date().toISOString() })
+  // Persist the monthly snapshot AND push the balance to the registry so Net Worth stays current.
+  function handleSetSnapshot(debtId: string, data: { balance: number; minPayment: number }) {
+    setDebtSnapshot(debtId, data)
+    updateDebt(debtId, { balance: data.balance })
   }
 
   const activeIncome = record.income.filter((i) => i.subcategory === 'active')
   const semiActiveIncome = record.income.filter((i) => i.subcategory === 'semi_active')
   const passiveIncome = record.income.filter((i) => i.subcategory === 'passive')
-  const fixedExpenses = record.expenses.filter((e) => e.subcategory === 'fixed')
-  const variableExpenses = record.expenses.filter((e) => e.subcategory === 'variable')
+  const fixedBills = record.expenses.filter((e) => e.subcategory === 'fixed_bill')
+  const variableItems = record.expenses.filter((e) => e.subcategory === 'variable')
+  const queue = buildDebtQueue(debts, settings.queueGrouping, record.rolling.amount)
+  const queueTop = queue[0]?.debt ?? null
 
   return (
     <div className="max-w-3xl mx-auto px-2 md:px-0 py-6">
@@ -167,41 +169,60 @@ export function StatementPage({ yearMonth }: Props) {
         </SectionTable>
       </div>
 
-      {/* Expenses */}
+      {/* Expenses — Cash Waterfall tiers */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-800 uppercase tracking-wider">Expenses</h2>
           <span className="text-sm font-semibold tabular-nums text-red-500">{formatCurrency(metrics.totalExpenses, sym)}</span>
         </div>
 
-        <SectionTable
-          title="Fixed"
-          accentColor="border-orange-400 bg-orange-50/30"
-          items={fixedExpenses}
-          settings={settings}
-          onUpdate={(id, u) => updateExpense(id, u as Partial<ExpenseLineItem>)}
+        <FixedBillsSection
+          items={fixedBills}
+          symbol={sym}
+          onAdd={addExpense}
           onDelete={deleteExpense}
-          onPushToNext={(item) => pushExpenseToNextMonth(item as ExpenseLineItem)}
-          onPushAllToNext={() => pushAllExpensesToNextMonth(fixedExpenses)}
-        >
-          <AddLineItemForm mode="expense" subcategory="fixed" symbol={sym} onAdd={addExpense} />
-        </SectionTable>
+        />
 
-        <SectionTable
-          title="Variable"
-          accentColor="border-red-400 bg-red-50/30"
-          items={variableExpenses}
-          settings={settings}
-          onUpdate={(id, u) => updateExpense(id, u as Partial<ExpenseLineItem>)}
+        <DebtMinimumsSection
+          kind="loan"
+          debts={debts}
+          snapshots={record.debtSnapshots}
+          symbol={sym}
+          onSetSnapshot={handleSetSnapshot}
+        />
+
+        <DebtMinimumsSection
+          kind="credit_card"
+          debts={debts}
+          snapshots={record.debtSnapshots}
+          symbol={sym}
+          onSetSnapshot={handleSetSnapshot}
+        />
+
+        <RollingSection
+          key={yearMonth}
+          rolling={record.rolling}
+          queueTop={queueTop}
+          symbol={sym}
+          onUpdate={updateRolling}
+        />
+
+        <VariableSection
+          items={variableItems}
+          symbol={sym}
+          onAdd={addExpense}
           onDelete={deleteExpense}
-          onPushToNext={(item) => pushExpenseToNextMonth(item as ExpenseLineItem)}
-          onPushAllToNext={() => pushAllExpensesToNextMonth(variableExpenses)}
-        >
-          <AddLineItemForm mode="expense" subcategory="variable" symbol={sym} onAdd={addExpense} />
-        </SectionTable>
+        />
       </div>
 
-
+      {/* Debt Tracking — sits below Expenses */}
+      <DebtTrackingSection
+        debts={debts}
+        snapshots={record.debtSnapshots}
+        grouping={settings.queueGrouping}
+        rollingAmount={record.rolling.amount}
+        symbol={sym}
+      />
 
       {/* Metrics Summary */}
       <MetricsSummaryBar metrics={metrics} delta={delta} settings={settings} />
