@@ -5,7 +5,7 @@ import { useSettings } from '../../hooks/useSettings'
 import { NetWorthItem } from './NetWorthItem'
 import { formatCurrency, parseCents } from '../../utils/formatting'
 import { nanoid } from '../statement/nanoid'
-import type { AssetCategory, DebtCategory } from '../../types'
+import type { AssetCategory, DebtCategory, DebtKind, LoanType, CardIssuer, Debt } from '../../types'
 
 const ASSET_CATEGORIES: { value: AssetCategory; label: string }[] = [
   { value: 'investment', label: 'Investment' },
@@ -103,6 +103,117 @@ function AddItemForm({ type, onAdd }: { type: 'asset' | 'debt'; onAdd: (label: s
   )
 }
 
+const LOAN_TYPES: { value: LoanType; label: string }[] = [
+  { value: 'student', label: 'Student' },
+  { value: 'cash', label: 'Cash' },
+  { value: 'auto', label: 'Auto' },
+  { value: 'mortgage', label: 'Mortgage' },
+  { value: 'other', label: 'Other' },
+]
+
+const CARD_ISSUERS: { value: CardIssuer; label: string }[] = [
+  { value: 'chase', label: 'Chase' },
+  { value: 'amex', label: 'Amex' },
+  { value: 'discover', label: 'Discover' },
+  { value: 'citi', label: 'Citi' },
+  { value: 'capital_one', label: 'Capital One' },
+  { value: 'other', label: 'Other' },
+]
+
+function loanTypeToCategory(t: LoanType): DebtCategory {
+  if (t === 'student' || t === 'auto' || t === 'mortgage') return t
+  return 'other' // 'cash' has no net-worth category bucket
+}
+
+function AddDebtForm({ onAdd }: { onAdd: (debt: Debt) => void }) {
+  const [open, setOpen] = useState(false)
+  const [label, setLabel] = useState('')
+  const [kind, setKind] = useState<DebtKind>('credit_card')
+  const [balance, setBalance] = useState('')
+  const [apr, setApr] = useState('')
+  const [minPayment, setMinPayment] = useState('')
+  const [creditLimit, setCreditLimit] = useState('')
+  const [issuer, setIssuer] = useState<CardIssuer>('chase')
+  const [loanType, setLoanType] = useState<LoanType>('student')
+  const [autopay, setAutopay] = useState(true)
+
+  function reset() {
+    setLabel(''); setBalance(''); setApr(''); setMinPayment(''); setCreditLimit(''); setOpen(false)
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    const bal = parseCents(balance)
+    if (!label.trim() || bal <= 0) return
+    onAdd({
+      id: nanoid(),
+      label: label.trim(),
+      balance: bal,
+      kind,
+      apr: parseFloat(apr) || 0,
+      minPayment: parseCents(minPayment),
+      autopay,
+      category: kind === 'credit_card' ? 'credit_card' : loanTypeToCategory(loanType),
+      ...(kind === 'credit_card'
+        ? { issuer, creditLimit: creditLimit ? parseCents(creditLimit) : undefined }
+        : { loanType }),
+      updatedAt: new Date().toISOString(),
+    })
+    reset()
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="w-full text-left text-xs text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-1 px-3 py-2">
+        <span className="text-base leading-none">+</span> Add debt
+      </button>
+    )
+  }
+
+  return (
+    <form onSubmit={submit} className="px-3 py-3 bg-blue-50/40 rounded-lg mx-1 mb-1 space-y-2">
+      <input autoFocus value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Canonical name (e.g. Chase Sapphire)"
+        className="w-full border border-blue-200 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      <div className="flex gap-2">
+        <select value={kind} onChange={(e) => setKind(e.target.value as DebtKind)} className="border border-blue-200 rounded px-2 py-1.5 text-xs bg-white flex-1">
+          <option value="credit_card">Credit Card</option>
+          <option value="loan">Loan</option>
+        </select>
+        {kind === 'credit_card' ? (
+          <select value={issuer} onChange={(e) => setIssuer(e.target.value as CardIssuer)} className="border border-blue-200 rounded px-2 py-1.5 text-xs bg-white flex-1">
+            {CARD_ISSUERS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        ) : (
+          <select value={loanType} onChange={(e) => setLoanType(e.target.value as LoanType)} className="border border-blue-200 rounded px-2 py-1.5 text-xs bg-white flex-1">
+            {LOAN_TYPES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <input inputMode="decimal" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="Balance $"
+          className="flex-1 border border-blue-200 rounded px-2 py-1.5 text-sm bg-white" />
+        <input inputMode="decimal" value={apr} onChange={(e) => setApr(e.target.value)} placeholder="APR %"
+          className="w-20 border border-blue-200 rounded px-2 py-1.5 text-sm bg-white" />
+      </div>
+      <div className="flex gap-2">
+        <input inputMode="decimal" value={minPayment} onChange={(e) => setMinPayment(e.target.value)} placeholder="Min payment $"
+          className="flex-1 border border-blue-200 rounded px-2 py-1.5 text-sm bg-white" />
+        {kind === 'credit_card' && (
+          <input inputMode="decimal" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="Credit limit $"
+            className="flex-1 border border-blue-200 rounded px-2 py-1.5 text-sm bg-white" />
+        )}
+      </div>
+      <label className="flex items-center gap-2 text-xs text-gray-600">
+        <input type="checkbox" checked={autopay} onChange={(e) => setAutopay(e.target.checked)} /> Autopay
+      </label>
+      <div className="flex gap-2">
+        <button type="submit" className="flex-1 bg-blue-600 text-white text-xs font-medium py-1.5 rounded hover:bg-blue-700">Add</button>
+        <button type="button" onClick={reset} className="text-gray-400 text-xs px-3 py-1.5 rounded hover:bg-gray-100">Cancel</button>
+      </div>
+    </form>
+  )
+}
+
 export function NetWorthPage() {
   const { settings } = useSettings()
   const sym = settings.currencySymbol
@@ -177,25 +288,24 @@ export function NetWorthPage() {
               <p className="text-xs text-gray-300 px-3 py-3">No debts — add balances you're tracking.</p>
             )}
             {debts.map((d) => (
-              <NetWorthItem
-                key={d.id}
-                id={d.id}
-                label={d.label}
-                value={d.balance}
-                category={d.category}
-                updatedAt={d.updatedAt}
-                symbol={sym}
-                accentColor={DEBT_COLORS[d.category]}
-                onUpdate={(id, updates) => updateDebt(id, updates.value !== undefined ? { balance: updates.value } : updates)}
-                onDelete={deleteDebt}
-              />
+              <div key={d.id}>
+                <NetWorthItem
+                  id={d.id}
+                  label={d.label}
+                  value={d.balance}
+                  category={d.category}
+                  updatedAt={d.updatedAt}
+                  symbol={sym}
+                  accentColor={DEBT_COLORS[d.category]}
+                  onUpdate={(id, updates) => updateDebt(id, updates.value !== undefined ? { balance: updates.value } : updates)}
+                  onDelete={deleteDebt}
+                />
+                <p className="text-[11px] text-gray-400 px-3 -mt-1 pb-1">
+                  {d.apr ? `${d.apr}% APR` : 'no APR'} · min {formatCurrency(d.minPayment, sym)}{d.autopay ? ' · autopay' : ''}
+                </p>
+              </div>
             ))}
-            <AddItemForm
-              type="debt"
-              onAdd={(label, value, category) =>
-                addDebt({ id: nanoid(), label, balance: value, category: category as DebtCategory, updatedAt: new Date().toISOString() })
-              }
-            />
+            <AddDebtForm onAdd={addDebt} />
           </div>
         </div>
       </div>
