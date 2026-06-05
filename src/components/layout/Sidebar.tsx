@@ -75,6 +75,18 @@ export function Sidebar({ onClose }: Props) {
         >
           <span>⚙</span> Settings
         </Link>
+        <Link
+          to="/migrate"
+          onClick={onClose}
+          className={clsx(
+            'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm no-underline transition-colors',
+            location.pathname === '/migrate'
+              ? 'bg-gray-700 text-white'
+              : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200',
+          )}
+        >
+          <span>⇄</span> Migrate data
+        </Link>
       </nav>
 
       {/* Month list */}

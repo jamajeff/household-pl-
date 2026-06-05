@@ -9,11 +9,17 @@ import { MetricCard } from './MetricCard'
 import { formatCurrency, formatPct, labelMonth, shortMonth } from '../../utils/formatting'
 // formatPct used for burnRate MetricCard
 import { currentYearMonth } from '../../hooks/useMonthData'
+import { useNetWorth } from '../../hooks/useNetWorth'
+import { buildDebtQueue } from '../../utils/debt'
 
 export function DashboardPage() {
   const navigate = useNavigate()
   const { settings } = useSettings()
   const sym = settings.currencySymbol
+  const { debts } = useNetWorth()
+  const thisMonth = getMonth(currentYearMonth())
+  const rollingAmount = thisMonth?.rolling.amount ?? settings.rollingAmount
+  const queueTop = buildDebtQueue(debts, settings.queueGrouping, rollingAmount)[0] ?? null
 
   const { months, latest, delta } = useMemo(() => {
     const index = getIndex()
@@ -104,6 +110,17 @@ export function DashboardPage() {
           </button>
         </div>
       </div>
+
+      {queueTop && (
+        <div className="bg-gray-900 text-white rounded-xl p-5 mb-6">
+          <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Current Rolling target</p>
+          <p className="text-2xl font-bold text-emerald-400">{queueTop.debt.label}</p>
+          <p className="text-sm text-gray-300 mt-1">
+            {formatCurrency(queueTop.debt.balance, sym)} @ {queueTop.debt.apr}% ·{' '}
+            ~{queueTop.monthsToClear ?? '—'} months at {formatCurrency(rollingAmount, sym)}/mo
+          </p>
+        </div>
+      )}
 
       {months.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
