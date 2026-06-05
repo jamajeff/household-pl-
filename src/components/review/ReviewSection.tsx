@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import clsx from 'clsx'
 import type {
   MonthRecord,
@@ -15,8 +16,9 @@ import {
   monthsToClearDebt,
   addMonthsToYearMonth,
 } from '../../utils/calculations'
-import { deltaDirection } from '../../utils/comparison'
+import { deltaDirection, diffLineItems } from '../../utils/comparison'
 import { computeDebtDelta } from '../../utils/debt'
+import { buildCoworkDataBlock } from '../../utils/coworkBlock'
 import { useNetWorth } from '../../hooks/useNetWorth'
 
 interface Props {
@@ -54,6 +56,7 @@ export function ReviewSection({
   const { currencySymbol: sym } = settings
   const { review } = record
   const { debts } = useNetWorth()
+  const [copied, setCopied] = useState(false)
   const debtDelta = priorRecord
     ? computeDebtDelta(record.debtSnapshots, priorRecord.debtSnapshots, debts)
     : null
@@ -134,6 +137,47 @@ export function ReviewSection({
     return <span className={`${color} font-medium`}>({direction} {fmt(Math.abs(amount))} {suffix})</span>
   }
 
+  function buildCoworkText(): string {
+    // top-3 movers come from this month's expense lines diffed against the prior month
+    const expenseMovers = diffLineItems(record.expenses, priorRecord?.expenses ?? [])
+      .filter((d) => d.currentAmount !== null)
+      .map((d) => ({ label: d.label, delta: d.delta }))
+    return buildCoworkDataBlock({
+      symbol: sym,
+      monthLabel: labelMonth(record.yearMonth),
+      revenue: metrics.totalRevenue,
+      revenueDelta: delta?.totalRevenue ?? null,
+      expenses: metrics.totalExpenses,
+      expensesDelta: delta?.totalExpenses ?? null,
+      netCashFlow: metrics.netCashFlow,
+      netCashFlowDelta: delta?.netCashFlow ?? null,
+      burnRate: metrics.burnRate,
+      burnRateDeltaPp: delta?.burnRate ?? null,
+      totalDebt: totalDebtDisplay,
+      totalDebtDelta: totalDebtDelta === null ? null : -totalDebtDelta, // express as current − prior
+      target: targetDebt
+        ? { name: targetDebt.label, balance: targetBalanceDisplay ?? targetDebt.balance, paid: paidThisMonth ?? 0 }
+        : null,
+      activeIncome: metrics.activeIncome,
+      semiActiveIncome: metrics.semiActiveIncome,
+      passiveIncome: metrics.passiveIncome,
+      totalRevenue: metrics.totalRevenue,
+      expenseMovers,
+    })
+  }
+
+  async function copyCoworkBlock() {
+    const text = buildCoworkText()
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable')
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      window.prompt('Copy this text, then paste in Cowork:', text)
+    }
+  }
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 mx-4 mb-8 overflow-hidden">
 
@@ -145,6 +189,17 @@ export function ReviewSection({
       </div>
 
       <div className="p-5 space-y-7">
+
+        {/* Copy data block for Cowork */}
+        <div>
+          <button
+            type="button"
+            onClick={copyCoworkBlock}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700"
+          >
+            {copied ? '✓ Copied — paste in Cowork' : '📋 Copy data block for Cowork'}
+          </button>
+        </div>
 
         {/* Headline + burn rate */}
         <div className="space-y-3">
