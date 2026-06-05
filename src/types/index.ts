@@ -61,7 +61,7 @@ export interface Debt {
   loanType?: LoanType           // when kind === 'loan'
   issuer?: CardIssuer           // when kind === 'credit_card'
   creditLimit?: number          // when kind === 'credit_card', integer cents
-  lender?: string
+  lender?: string               // loan-side free-text lender name (e.g. "SoFi")
   updatedAt: string
 }
 
@@ -82,23 +82,24 @@ export interface DebtSnapshot {
   minPayment: number   // minimum due this month, integer cents
 }
 
-// Tier 4 — Rolling $8K
+// Tier 4 — rolling payment target (seeded from AppSettings.rollingAmount, editable per month)
 export interface RollingPayment {
-  amount: number              // target rolling amount this month, integer cents
+  amount: number              // this month's rolling target, integer cents (may differ from the global setting)
   paidThisMonth: number       // actually paid, integer cents
   targetDebtId: string | null // debt the rolling payment was applied to
 }
 
+// All deltas are prior balance - current balance (positive = paid down), integer cents
 export interface DebtDelta {
-  creditCardDelta: number // prior balance - current balance for cards (positive = paid down)
-  loanDelta: number
-  totalDelta: number
+  creditCardDelta: number // summed across credit-card debts
+  loanDelta: number       // summed across loan debts
+  totalDelta: number      // creditCardDelta + loanDelta
 }
 
 export interface MonthRecord {
   yearMonth: string // "YYYY-MM"
   income: IncomeLineItem[]
-  expenses: ExpenseLineItem[]   // now Tier 2 (fixed_bill) + Tier 7 (variable) only
+  expenses: ExpenseLineItem[]   // Tier 2 (fixed_bill) and Tier 7 (variable)
   debtSnapshots: DebtSnapshot[] // Tier 3a/3b monthly data
   rolling: RollingPayment       // Tier 4
   review: ReviewData
