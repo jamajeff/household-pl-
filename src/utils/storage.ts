@@ -16,7 +16,7 @@ const SETTINGS_KEY = `${PREFIX}settings`
 const ASSETS_KEY = `${PREFIX}assets`
 const DEBTS_KEY = `${PREFIX}debts`
 
-export const DEFAULT_ROLLING_CENTS = 800000 // $8,000
+export const DEFAULT_ROLLING_CENTS = 0 // no default rolling target (blank until set)
 
 const DEFAULT_SETTINGS: AppSettings = {
   person1Name: 'Person 1',
@@ -25,7 +25,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   targetBurnRatePct: null,
   targetDebtId: null,
   rollingAmount: DEFAULT_ROLLING_CENTS,
-  burnRateOverrideMonths: 2,
+  burnRateOverrideMonths: 0,
   queueGrouping: ['credit_card', 'cash', 'student', 'auto', 'mortgage', 'other'],
   payoffMode: 'apr',
 }

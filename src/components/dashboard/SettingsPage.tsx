@@ -182,18 +182,18 @@ export function SettingsPage() {
               symbol={form.currencySymbol}
               className="w-40 border border-gray-200 rounded-lg pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
-            <p className="text-xs text-gray-400 mt-1.5">Above-minimum debt paydown applied to queue #1. Default $8,000.</p>
+            <p className="text-xs text-gray-400 mt-1.5">Above-minimum debt paydown applied to queue #1. Leave blank for no rolling target.</p>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Burn-rate override (months)</label>
             <input
-              type="number" min={1} max={12} step={1}
+              type="number" min={0} max={12} step={1}
               value={form.burnRateOverrideMonths}
-              onChange={(e) => setForm({ ...form, burnRateOverrideMonths: Number(e.target.value) || 1 })}
+              onChange={(e) => setForm({ ...form, burnRateOverrideMonths: Math.max(0, Number(e.target.value) || 0) })}
               className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
-            <p className="text-xs text-gray-400 mt-1.5">Consecutive months over 100% burn that pause Tier 5. Default 2.</p>
+            <p className="text-xs text-gray-400 mt-1.5">Consecutive months over 100% burn that pause Tier 5. 0 disables it.</p>
           </div>
 
           <div>

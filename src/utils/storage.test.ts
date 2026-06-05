@@ -16,7 +16,7 @@ describe('getMonth backfill', () => {
     }))
     const rec = getMonth('2026-01')!
     expect(rec.debtSnapshots).toEqual([])
-    expect(rec.rolling).toEqual({ amount: 800000, paidThisMonth: 0, targetDebtId: null })
+    expect(rec.rolling).toEqual({ amount: 0, paidThisMonth: 0, targetDebtId: null })
     expect(rec.expenses[0].subcategory).toBe('fixed')
   })
 
@@ -54,8 +54,8 @@ describe('getDebts backfill', () => {
 describe('getSettings backfill', () => {
   it('provides new defaults', () => {
     const s = getSettings()
-    expect(s.rollingAmount).toBe(800000)
-    expect(s.burnRateOverrideMonths).toBe(2)
+    expect(s.rollingAmount).toBe(0)
+    expect(s.burnRateOverrideMonths).toBe(0)
     expect(s.payoffMode).toBe('apr')
     expect(s.queueGrouping).toEqual(['credit_card', 'cash', 'student', 'auto', 'mortgage', 'other'])
   })
