@@ -3,6 +3,7 @@ import { useSettings } from '../../hooks/useSettings'
 import { useNetWorth } from '../../hooks/useNetWorth'
 import { exportAllData, importAllData } from '../../utils/storage'
 import type { AppSettings } from '../../types'
+import { CurrencyInput } from '../shared/CurrencyInput'
 
 export function SettingsPage() {
   const { settings, save } = useSettings()
@@ -162,6 +163,55 @@ export function SettingsPage() {
               setSaved(true)
               setTimeout(() => setSaved(false), 2000)
             }}
+            className="w-full bg-gray-900 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-gray-700 transition-colors font-medium"
+          >
+            {saved ? '✓ Saved' : 'Save'}
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Waterfall & Debt</h2>
+        <p className="text-sm text-gray-400 mb-4">Constants that drive the Cash Waterfall and payoff queue.</p>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-5">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Rolling amount (Tier 4)</label>
+            <CurrencyInput
+              value={form.rollingAmount}
+              onChange={(v) => setForm({ ...form, rollingAmount: v })}
+              symbol={form.currencySymbol}
+              className="w-40 border border-gray-200 rounded-lg pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">Above-minimum debt paydown applied to queue #1. Default $8,000.</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Burn-rate override (months)</label>
+            <input
+              type="number" min={1} max={12} step={1}
+              value={form.burnRateOverrideMonths}
+              onChange={(e) => setForm({ ...form, burnRateOverrideMonths: Number(e.target.value) || 1 })}
+              className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">Consecutive months over 100% burn that pause Tier 5. Default 2.</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Debt payoff rule</label>
+            <select
+              value={form.payoffMode}
+              onChange={(e) => setForm({ ...form, payoffMode: e.target.value as AppSettings['payoffMode'] })}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="apr">Highest APR first (avalanche)</option>
+              <option value="snowball">Lowest balance first (snowball)</option>
+            </select>
+            <p className="text-xs text-gray-400 mt-1.5">Queue grouping: {form.queueGrouping.map((g) => g.replace('_', ' ')).join(' → ')}</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => { save(form); setSaved(true); setTimeout(() => setSaved(false), 2000) }}
             className="w-full bg-gray-900 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-gray-700 transition-colors font-medium"
           >
             {saved ? '✓ Saved' : 'Save'}
