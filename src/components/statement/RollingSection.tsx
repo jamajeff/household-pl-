@@ -10,7 +10,8 @@ interface Props {
 }
 
 function status(rolling: RollingPayment): { text: string; color: string } {
-  if (rolling.paidThisMonth >= rolling.amount && rolling.amount > 0) return { text: 'On track', color: 'text-emerald-600' }
+  // No commitment this month (amount 0) or fully paid → On track. Nothing paid → Missed. Otherwise Partial.
+  if (rolling.amount <= 0 || rolling.paidThisMonth >= rolling.amount) return { text: 'On track', color: 'text-emerald-600' }
   if (rolling.paidThisMonth === 0) return { text: 'Missed', color: 'text-red-500' }
   return { text: 'Partial', color: 'text-amber-500' }
 }
