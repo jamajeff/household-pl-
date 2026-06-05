@@ -58,11 +58,13 @@ export function DebtMinimumsSection({ kind, debts, snapshots, symbol, onSetSnaps
                     {util !== null && <span className={`ml-2 text-[11px] ${utilizationColor(util)}`}>{util.toFixed(0)}% util</span>}
                   </td>
                   <td className="py-2 px-1">
-                    <DebtCell label="min" value={minPayment} symbol={symbol}
+                    {/* key includes the committed value so the cell remounts (re-seeding its
+                        draft) when the snapshot changes — e.g. navigating between months */}
+                    <DebtCell key={`min-${d.id}-${minPayment}`} label="min" value={minPayment} symbol={symbol}
                       onCommit={(v) => onSetSnapshot(d.id, { balance, minPayment: v })} />
                   </td>
                   <td className="py-2 px-1 pr-4">
-                    <DebtCell label="balance" value={balance} symbol={symbol}
+                    <DebtCell key={`bal-${d.id}-${balance}`} label="balance" value={balance} symbol={symbol}
                       onCommit={(v) => onSetSnapshot(d.id, { balance: v, minPayment })} />
                   </td>
                 </tr>
