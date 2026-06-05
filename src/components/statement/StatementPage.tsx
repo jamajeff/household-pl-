@@ -234,6 +234,7 @@ export function StatementPage({ yearMonth }: Props) {
         delta={delta}
         lineItemDeltas={lineItemDeltas}
         priorReview={priorRecord?.review ?? null}
+        priorRecord={priorRecord}
         settings={settings}
         onUpdateReview={updateReview}
       />

@@ -16,6 +16,7 @@ import {
   addMonthsToYearMonth,
 } from '../../utils/calculations'
 import { deltaDirection } from '../../utils/comparison'
+import { computeDebtDelta } from '../../utils/debt'
 import { useNetWorth } from '../../hooks/useNetWorth'
 
 interface Props {
@@ -24,6 +25,7 @@ interface Props {
   delta: MonthDelta | null
   lineItemDeltas: LineItemDelta[]
   priorReview: ReviewData | null
+  priorRecord: MonthRecord | null
   settings: AppSettings
   onUpdateReview: (review: ReviewData) => void
 }
@@ -45,12 +47,16 @@ export function ReviewSection({
   delta,
   lineItemDeltas,
   priorReview,
+  priorRecord,
   settings,
   onUpdateReview,
 }: Props) {
   const { currencySymbol: sym } = settings
   const { review } = record
   const { debts } = useNetWorth()
+  const debtDelta = priorRecord
+    ? computeDebtDelta(record.debtSnapshots, priorRecord.debtSnapshots, debts)
+    : null
 
   const fmt = (c: number) => formatCurrency(c, sym)
   const headline = formatHeadline(metrics.netCashFlow, delta?.netCashFlow ?? null, fmt)
@@ -157,6 +163,37 @@ export function ReviewSection({
 
         <div className="border-t border-gray-100" />
 
+        {/* Current waterfall commitments */}
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Current waterfall commitments</p>
+          <ul className="space-y-1.5 text-sm text-gray-800">
+            {[
+              { label: 'Tier 2 — Fixed bills', amount: metrics.tier2Total },
+              { label: 'Tier 3a — Loan minimums', amount: metrics.tier3aTotal },
+              { label: 'Tier 3b — CC minimums', amount: metrics.tier3bTotal },
+              { label: 'Tier 4 — Rolling', amount: record.rolling.amount },
+            ].map(({ label, amount }) => (
+              <li key={label} className="flex items-baseline gap-2">
+                <span className="text-gray-400">•</span>
+                <span className="w-48">{label}:</span>
+                <span className="font-semibold text-gray-900 tabular-nums">{fmt(amount)}</span>
+              </li>
+            ))}
+            <li className="flex items-baseline gap-2 pt-1 border-t border-gray-50">
+              <span className="text-gray-400">•</span>
+              <span className="w-48 font-medium">Total committed:</span>
+              <span className="font-semibold text-gray-900 tabular-nums">{fmt(metrics.totalCommitted)}</span>
+            </li>
+            <li className="flex items-baseline gap-2">
+              <span className="text-gray-400">•</span>
+              <span className="w-48 font-medium">Remaining for Tiers 5–7:</span>
+              <span className={`font-semibold tabular-nums ${metrics.remainingForLowerTiers < 0 ? 'text-red-500' : 'text-emerald-600'}`}>{fmt(metrics.remainingForLowerTiers)}</span>
+            </li>
+          </ul>
+        </div>
+
+        <div className="border-t border-gray-100" />
+
         {/* Debt block */}
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Debt</p>
@@ -169,6 +206,14 @@ export function ReviewSection({
                 {renderDelta(totalDebtDelta)}
               </span>
             </li>
+            {debtDelta && (
+              <li className="flex items-baseline gap-2">
+                <span className="text-gray-400">•</span>
+                <span>
+                  Debt change vs last month — CC {renderDelta(debtDelta.creditCardDelta)} · Loans {renderDelta(debtDelta.loanDelta)} · Total {renderDelta(debtDelta.totalDelta)}
+                </span>
+              </li>
+            )}
             <li className="flex items-baseline gap-2">
               <span className="text-gray-400">•</span>
               <span>
