@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { getMonth, setMonth, getDebts, setDebts, getSettings } from './storage'
+import { getMonth, setMonth, getDebts, getSettings } from './storage'
 
 beforeEach(() => {
   localStorage.clear()

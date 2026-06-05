@@ -144,7 +144,7 @@ export function getDebts(): Debt[] {
       apr: d.apr ?? 0,
       minPayment: d.minPayment ?? 0,
       autopay: d.autopay ?? false,
-      loanType: d.loanType ?? (d.kind === 'credit_card' || d.category === 'credit_card' ? undefined : inferLoanType(d.category)),
+      loanType: d.loanType ?? (d.category === 'credit_card' ? undefined : inferLoanType(d.category)),
     })) as Debt[]
   } catch {
     return []
