@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { monthsToClearDebt, addMonthsToYearMonth, formatHeadline } from './calculations'
+import { monthsToClearDebt, addMonthsToYearMonth, formatHeadline, computeMetrics } from './calculations'
+import type { MonthRecord, Debt } from '../types'
 
 describe('monthsToClearDebt', () => {
   it('returns exact months when balance is divisible by paid', () => {
@@ -72,5 +73,50 @@ describe('formatHeadline', () => {
     const fmtNeg = (cents: number) => cents < 0 ? `-$${(Math.abs(cents) / 100).toFixed(0)}` : `$${(cents / 100).toFixed(0)}`
     expect(formatHeadline(-200_000, null, fmtNeg))
       .toBe('Net cash flow was -$2000.')
+  })
+})
+
+function baseRecord(over: Partial<MonthRecord> = {}): MonthRecord {
+  return {
+    yearMonth: '2026-03',
+    income: [
+      { id: 'i1', label: 'Salary', amount: 1000000, person: 'person1', subcategory: 'active' },
+    ],
+    expenses: [
+      { id: 'e1', label: 'Rent', amount: 200000, person: 'shared', subcategory: 'fixed_bill' },
+      { id: 'e2', label: 'Groceries', amount: 50000, person: 'shared', subcategory: 'variable' },
+    ],
+    debtSnapshots: [
+      { debtId: 'card1', balance: 800000, minPayment: 25000 },
+      { debtId: 'loan1', balance: 2500000, minPayment: 66500 },
+    ],
+    rolling: { amount: 800000, paidThisMonth: 800000, targetDebtId: 'card1' },
+    review: { targetDebtSnapshot: null, totalDebtSnapshot: null, snapshotTakenAt: null, oneStepIncomeTier: '', oneWin: '', oneToWatch: '', oneDecisionNext: '' },
+    updatedAt: 'x',
+    ...over,
+  }
+}
+
+const DEBTS: Debt[] = [
+  { id: 'card1', label: 'Chase', balance: 800000, category: 'credit_card', kind: 'credit_card', apr: 22.99, minPayment: 25000, autopay: true, updatedAt: 'x' },
+  { id: 'loan1', label: 'Sofi', balance: 2500000, category: 'student', kind: 'loan', apr: 6.5, minPayment: 66500, autopay: true, loanType: 'student', updatedAt: 'x' },
+]
+
+describe('computeMetrics tiers', () => {
+  it('splits minimums into 3a (loan) and 3b (card) and totals committed', () => {
+    const m = computeMetrics(baseRecord(), DEBTS)
+    expect(m.tier2Total).toBe(200000)
+    expect(m.tier7Total).toBe(50000)
+    expect(m.tier3bTotal).toBe(25000)
+    expect(m.tier3aTotal).toBe(66500)
+    expect(m.tier4Rolling).toBe(800000)
+    expect(m.totalCommitted).toBe(200000 + 66500 + 25000 + 800000)
+    expect(m.remainingForLowerTiers).toBe(1000000 - m.totalCommitted)
+  })
+
+  it('totalExpenses includes bills, minimums, rolling paid, and variable', () => {
+    const m = computeMetrics(baseRecord(), DEBTS)
+    expect(m.totalExpenses).toBe(200000 + 66500 + 25000 + 800000 + 50000)
+    expect(m.netCashFlow).toBe(1000000 - m.totalExpenses)
   })
 })

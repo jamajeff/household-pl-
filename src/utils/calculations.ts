@@ -1,19 +1,33 @@
 import { addMonths, format, parse } from 'date-fns'
-import type { MonthRecord, MonthMetrics, LineItem } from '../types'
+import type { MonthRecord, MonthMetrics, LineItem, Debt } from '../types'
 
 function sum(items: LineItem[]): number {
   return items.reduce((acc, i) => acc + i.amount, 0)
 }
 
-export function computeMetrics(record: MonthRecord): MonthMetrics {
+export function computeMetrics(record: MonthRecord, debts: Debt[] = []): MonthMetrics {
   const activeIncome = sum(record.income.filter((i) => i.subcategory === 'active'))
   const semiActiveIncome = sum(record.income.filter((i) => i.subcategory === 'semi_active'))
   const passiveIncome = sum(record.income.filter((i) => i.subcategory === 'passive'))
   const totalRevenue = activeIncome + semiActiveIncome + passiveIncome
 
-  const fixedExpenses = sum(record.expenses.filter((e) => e.subcategory === 'fixed'))
-  const variableExpenses = sum(record.expenses.filter((e) => e.subcategory === 'variable'))
-  const totalExpenses = fixedExpenses + variableExpenses
+  const tier2Total = sum(record.expenses.filter((e) => e.subcategory === 'fixed_bill'))
+  const tier7Total = sum(record.expenses.filter((e) => e.subcategory === 'variable'))
+
+  // Split debt-snapshot minimums by the registry kind.
+  const kindOf = new Map(debts.map((d) => [d.id, d.kind]))
+  let tier3aTotal = 0
+  let tier3bTotal = 0
+  for (const snap of record.debtSnapshots) {
+    if (kindOf.get(snap.debtId) === 'credit_card') tier3bTotal += snap.minPayment
+    else tier3aTotal += snap.minPayment // default unknown -> loan bucket
+  }
+
+  const tier4Rolling = record.rolling.paidThisMonth
+  const totalExpenses = tier2Total + tier3aTotal + tier3bTotal + tier4Rolling + tier7Total
+
+  const totalCommitted = tier2Total + tier3aTotal + tier3bTotal + record.rolling.amount
+  const remainingForLowerTiers = totalRevenue - totalCommitted
 
   const netCashFlow = totalRevenue - totalExpenses
   const burnRate = totalRevenue > 0 ? (totalExpenses / totalRevenue) * 100 : 0
@@ -31,8 +45,15 @@ export function computeMetrics(record: MonthRecord): MonthMetrics {
     activeIncome,
     semiActiveIncome,
     passiveIncome,
-    fixedExpenses,
-    variableExpenses,
+    fixedExpenses: tier2Total,
+    variableExpenses: tier7Total,
+    tier2Total,
+    tier3aTotal,
+    tier3bTotal,
+    tier4Rolling,
+    tier7Total,
+    totalCommitted,
+    remainingForLowerTiers,
   }
 }
 
