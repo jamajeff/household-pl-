@@ -18,11 +18,10 @@ interface Props {
   items: ExpenseLineItem[]
   symbol: string
   onAdd: (item: ExpenseLineItem) => void
-  onUpdate: (id: string, updates: Partial<ExpenseLineItem>) => void
   onDelete: (id: string) => void
 }
 
-export function FixedBillsSection({ items, symbol, onAdd, onUpdate: _onUpdate, onDelete }: Props) {
+export function FixedBillsSection({ items, symbol, onAdd, onDelete }: Props) {
   const [open, setOpen] = useState(false)
   const [label, setLabel] = useState('')
   const [amount, setAmount] = useState(0)
@@ -87,7 +86,7 @@ export function FixedBillsSection({ items, symbol, onAdd, onUpdate: _onUpdate, o
                       {BILL_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                     </select>
                     <CurrencyInput value={amount} onChange={setAmount} symbol={symbol}
-                      className="w-32 border border-orange-200 rounded pl-6 pr-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                      className="w-32 border border-orange-200 rounded pr-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-400" />
                   </div>
                   <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Notes (optional)"
                     className="w-full border border-orange-200 rounded px-2 py-1.5 text-sm bg-white" />
