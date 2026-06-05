@@ -119,4 +119,18 @@ describe('computeMetrics tiers', () => {
     expect(m.totalExpenses).toBe(200000 + 66500 + 25000 + 800000 + 50000)
     expect(m.netCashFlow).toBe(1000000 - m.totalExpenses)
   })
+
+  it('uses rolling.amount for commitment but paidThisMonth for actual expense', () => {
+    // amount (committed) and paidThisMonth (actual) deliberately differ
+    const m = computeMetrics(baseRecord({ rolling: { amount: 900000, paidThisMonth: 800000, targetDebtId: 'card1' } }), DEBTS)
+    expect(m.tier4Rolling).toBe(800000)                                   // actual paid
+    expect(m.totalCommitted).toBe(200000 + 66500 + 25000 + 900000)        // committed uses amount
+    expect(m.totalExpenses).toBe(200000 + 66500 + 25000 + 800000 + 50000) // expense uses paidThisMonth
+  })
+
+  it('without a debts registry, all snapshot minimums fall to the loan bucket (3a)', () => {
+    const m = computeMetrics(baseRecord()) // default debts = []
+    expect(m.tier3bTotal).toBe(0)
+    expect(m.tier3aTotal).toBe(66500 + 25000) // both snapshots routed to loan bucket
+  })
 })
