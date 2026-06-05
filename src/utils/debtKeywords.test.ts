@@ -22,4 +22,9 @@ describe('classifyDebtKind', () => {
     expect(classifyDebtKind('Dept of ED')).toBe('loan')
     expect(classifyDebtKind('Apartment')).toBeNull()
   })
+
+  it('prefers credit_card when both card and loan keywords are present', () => {
+    // "card" (card kw) and "student"/"loan" (loan kw) both match; card wins
+    expect(classifyDebtKind('Student Credit Card')).toBe('credit_card')
+  })
 })
