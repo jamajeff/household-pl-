@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
-import { getMonth, setMonth } from '../utils/storage'
-import type { MonthRecord, IncomeLineItem, ExpenseLineItem, ReviewData } from '../types'
+import { getMonth, setMonth, getSettings } from '../utils/storage'
+import type { MonthRecord, IncomeLineItem, ExpenseLineItem, ReviewData, RollingPayment } from '../types'
 import { nanoid } from '../components/statement/nanoid'
 import { format } from 'date-fns'
 
@@ -9,6 +9,8 @@ function emptyRecord(yearMonth: string): MonthRecord {
     yearMonth,
     income: [],
     expenses: [],
+    debtSnapshots: [],
+    rolling: { amount: getSettings().rollingAmount, paidThisMonth: 0, targetDebtId: null },
     review: {
       targetDebtSnapshot: null,
       totalDebtSnapshot: null,
@@ -76,12 +78,37 @@ export function useMonthData(yearMonth: string) {
     [record, persist],
   )
 
+  const setDebtSnapshot = useCallback(
+    (debtId: string, data: { balance: number; minPayment: number }) =>
+      persist({
+        ...record,
+        debtSnapshots: record.debtSnapshots.some((s) => s.debtId === debtId)
+          ? record.debtSnapshots.map((s) => (s.debtId === debtId ? { ...s, ...data } : s))
+          : [...record.debtSnapshots, { debtId, ...data }],
+      }),
+    [record, persist],
+  )
+
+  const removeDebtSnapshot = useCallback(
+    (debtId: string) =>
+      persist({ ...record, debtSnapshots: record.debtSnapshots.filter((s) => s.debtId !== debtId) }),
+    [record, persist],
+  )
+
+  const updateRolling = useCallback(
+    (updates: Partial<RollingPayment>) =>
+      persist({ ...record, rolling: { ...record.rolling, ...updates } }),
+    [record, persist],
+  )
+
   const copyFromRecord = useCallback(
     (source: MonthRecord) => {
       persist({
         ...record,
         income: source.income.map((i) => ({ ...i, id: nanoid() })),
         expenses: source.expenses.map((e) => ({ ...e, id: nanoid() })),
+        debtSnapshots: source.debtSnapshots.map((s) => ({ ...s })),
+        rolling: { ...source.rolling, paidThisMonth: 0 },
       })
     },
     [record, persist],
@@ -103,6 +130,9 @@ export function useMonthData(yearMonth: string) {
     updateExpense,
     deleteExpense,
     updateReview,
+    setDebtSnapshot,
+    removeDebtSnapshot,
+    updateRolling,
     copyFromRecord,
   }
 }
