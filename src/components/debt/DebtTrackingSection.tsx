@@ -78,7 +78,7 @@ export function DebtTrackingSection({ debts, snapshots, grouping, rollingAmount,
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Debt Payoff Queue · highest APR first</p>
         <Table head={['#', 'Type', 'Name', 'Balance', 'APR', 'Min', 'Months @ rolling']}>
           {queue.map((q) => (
-            <tr key={q.debt.id} className={q.rank === 1 ? 'bg-emerald-50' : 'border-b border-gray-50'}>
+            <tr key={q.debt.id} className={`border-b border-gray-50 ${q.rank === 1 ? 'bg-emerald-50' : ''}`}>
               <td className="py-1.5 text-sm font-semibold">#{q.rank}</td>
               <td className="py-1.5 text-sm">{GROUP_LABEL[q.group]}</td>
               <td className="py-1.5 text-sm text-gray-700">{q.debt.label}</td>
